@@ -1,38 +1,45 @@
-name: GitHub Pages デプロイ
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:   # 手動実行ボタンも有効化
+    branches: [main]
+  workflow_dispatch:
 
+# GitHub Pages デプロイに必要な最小限の権限
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# 同時デプロイを防ぐ
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
+  # ── ビルド（ファイルをアーティファクトに固める）──
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."   # リポジトリルートをそのまま公開
+
+  # ── デプロイ ──
   deploy:
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
-
-      - name: GitHub Pages を設定
-        uses: actions/configure-pages@v5
-
-      - name: 静的ファイルをアップロード
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: GitHub Pages にデプロイ
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
