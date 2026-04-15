@@ -1,0 +1,452 @@
+/* =============================================
+   ARスタンプラリー - グローバルスタイル
+   モバイルファースト設計（スマホ縦持ち基準）
+   ============================================= */
+
+/* ---------- リセット & ベース ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary: #5C6BC0;
+  --primary-dark: #3949AB;
+  --accent: #FF7043;
+  --bg: #F5F5F5;
+  --surface: #FFFFFF;
+  --text: #212121;
+  --text-sub: #757575;
+  --border: #E0E0E0;
+  --radius: 16px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --transition: 0.25s ease;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100dvh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---------- レイアウト ---------- */
+.page-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px 80px;
+}
+
+/* ---------- ヘッダー ---------- */
+.app-header {
+  background: var(--primary);
+  color: white;
+  padding: 16px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.app-header h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.app-header .subtitle {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* ---------- 進捗バー ---------- */
+.progress-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 16px 0;
+  box-shadow: var(--shadow);
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: var(--text-sub);
+}
+
+.progress-label strong {
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+.progress-track {
+  background: var(--border);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  height: 100%;
+  border-radius: 999px;
+  width: 0%;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- スタンプグリッド ---------- */
+.stamp-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stamp-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.stamp-card.collected {
+  border-left: 5px solid var(--primary);
+}
+
+.stamp-card.locked {
+  opacity: 0.65;
+  filter: grayscale(0.5);
+}
+
+.stamp-card:active {
+  transform: scale(0.98);
+}
+
+.stamp-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.stamp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stamp-name {
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stamp-sub {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  margin-top: 2px;
+}
+
+.btn-ar {
+  background: var(--primary);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: background var(--transition), transform var(--transition);
+}
+
+.btn-ar:active {
+  background: var(--primary-dark);
+  transform: scale(0.95);
+}
+
+/* ---------- コンプリートバナー ---------- */
+.complete-banner {
+  background: linear-gradient(135deg, #FFD700, #FF8C00);
+  color: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  margin: 16px 0;
+  box-shadow: var(--shadow);
+}
+
+.complete-banner h2 {
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+}
+
+.complete-banner p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* ---------- stamp.html - スタンプ詳細 ---------- */
+.stamp-detail {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 24px 0;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.stamp-detail-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.stamp-detail h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stamp-detail .stamp-detail-sub {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  margin-bottom: 12px;
+}
+
+.stamp-detail .stamp-detail-desc {
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+.stamp-status {
+  display: inline-block;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.stamp-status.new {
+  background: #E8F5E9;
+  color: #2E7D32;
+  animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stamp-status.already {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+/* ---------- ボタン ---------- */
+.btn-primary {
+  display: block;
+  width: 100%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(92, 107, 192, 0.4);
+  transition: background var(--transition), transform var(--transition);
+}
+
+.btn-primary:active {
+  background: var(--primary-dark);
+  transform: scale(0.97);
+}
+
+.btn-secondary {
+  display: block;
+  width: 100%;
+  background: var(--surface);
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 10px;
+  transition: background var(--transition), transform var(--transition);
+}
+
+.btn-secondary:active {
+  background: var(--bg);
+  transform: scale(0.97);
+}
+
+/* ---------- AR ページ ---------- */
+.ar-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.65);
+  color: white;
+  padding: 16px;
+  text-align: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.ar-overlay p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.ar-overlay h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.ar-back-btn {
+  display: inline-block;
+  margin-top: 10px;
+  background: white;
+  color: var(--primary);
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* ---------- エラー表示 ---------- */
+.error-box {
+  background: #FFEBEE;
+  border: 1px solid #FFCDD2;
+  color: #C62828;
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  margin: 24px 0;
+}
+
+/* ---------- ユーティリティ ---------- */
+.hidden {
+  display: none !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+/* ---------- アニメーション ---------- */
+@keyframes pop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* ---------- マーカーガイド ---------- */
+.marker-guide {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 12px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.marker-guide p {
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  margin-bottom: 8px;
+}
+
+.marker-guide img {
+  width: 120px;
+  height: 120px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+}
+
+/* ---------- ナビゲーション ---------- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  display: flex;
+  border-top: 1px solid var(--border);
+  z-index: 200;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+
+.bottom-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 0.7rem;
+  color: var(--text-sub);
+  transition: color var(--transition);
+}
+
+.bottom-nav a.active,
+.bottom-nav a:active {
+  color: var(--primary);
+}
+
+.bottom-nav .nav-icon {
+  font-size: 1.4rem;
+  margin-bottom: 2px;
+}

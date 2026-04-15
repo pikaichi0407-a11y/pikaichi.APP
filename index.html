@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#5C6BC0" />
+  <meta name="description" content="ARスタンプラリー - QRコードを読んでキャラクターをARで見よう！" />
+  <title>ARスタンプラリー</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <header class="app-header">
+    <h1>&#127381; ARスタンプラリー</h1>
+    <p class="subtitle">QRコードをスキャンしてスタンプを集めよう</p>
+  </header>
+
+  <main class="page-container">
+
+    <!-- コンプリートバナー（全取得時に表示） -->
+    <div id="complete-banner" class="complete-banner hidden">
+      <h2>&#127881; コンプリート！</h2>
+      <p>全5つのスタンプをコンテナ！おめでとうございます！</p>
+    </div>
+
+    <!-- 進捗表示 -->
+    <section class="progress-section">
+      <div class="progress-label">
+        <span>スタンプ進捗</span>
+        <strong><span id="progress-count">0 / 5</span></strong>
+      </div>
+      <div class="progress-track">
+        <div id="progress-bar" class="progress-fill"></div>
+      </div>
+    </section>
+
+    <!-- スタンプカード一覧 -->
+    <section>
+      <div id="stamp-grid" class="stamp-grid">
+        <!-- JS で動的生成 -->
+        <p class="text-center" style="color:var(--text-sub);padding:20px;">読み込み中...</p>
+      </div>
+    </section>
+
+    <!-- デバッグ用リセットボタン（開発時のみ表示） -->
+    <div id="debug-section" class="hidden mt-16">
+      <button class="btn-secondary" onclick="resetAllStamps(); location.reload();">
+        &#128260; スタンプをリセット（デバッグ用）
+      </button>
+    </div>
+
+    <!-- 使い方ガイド -->
+    <section class="marker-guide mt-16">
+      <p>各スポットにあるQRコードをスキャンしてスタンプをゲット！</p>
+      <p style="font-size:0.8rem;margin-top:8px;color:var(--text-sub);">
+        スタンプ取得後は「ARで見る」ボタンでキャラクターが登場！
+      </p>
+    </section>
+
+  </main>
+
+  <!-- ボトムナビゲーション -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="active">
+      <span class="nav-icon">&#127381;</span>
+      スタンプ帳
+    </a>
+    <a href="#" onclick="openQRScanner(); return false;">
+      <span class="nav-icon">&#128247;</span>
+      スキャン
+    </a>
+  </nav>
+
+  <script src="js/stamps-config.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // ページ初期化
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStampGrid();
+
+      // 開発中はデバッグセクションを表示（本番では削除すること）
+      const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (isDev) {
+        document.getElementById('debug-section').classList.remove('hidden');
+      }
+    });
+
+    // QRスキャン（今後実装予定 - 現在はカメラを開く）
+    function openQRScanner() {
+      alert('QRスキャン機能は今後実装予定です。\n各スポットのQRコードを読み取ってください。');
+    }
+  </script>
+</body>
+</html>
