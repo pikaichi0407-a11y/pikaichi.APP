@@ -43,12 +43,23 @@
       </div>
     </section>
 
-    <!-- デバッグ用リセットボタン（開発時のみ表示） -->
-    <div id="debug-section" class="hidden mt-16">
-      <button class="btn-secondary" onclick="resetAllStamps(); location.reload();">
-        &#128260; スタンプをリセット（デバッグ用）
+    <!-- ===== 開発用テストパネル ===== -->
+    <section id="test-panel" class="test-panel mt-16">
+      <div class="test-panel-header">
+        <span>&#128295; 開発テストパネル</span>
+        <span class="test-badge">DEV</span>
+      </div>
+      <p class="test-panel-desc">
+        仮ボタンでスタンプ取得をシミュレート。<br>実機ではQRコードが代わりになります。
+      </p>
+      <div class="test-stamp-buttons" id="test-stamp-buttons">
+        <!-- JS で生成 -->
+      </div>
+      <button class="btn-reset" onclick="resetAllStamps(); renderStampGrid(); renderTestButtons();">
+        &#128260; 全リセット
       </button>
-    </div>
+    </section>
+    <!-- ===== /テストパネル ===== -->
 
     <!-- 使い方ガイド -->
     <section class="marker-guide mt-16">
@@ -75,20 +86,77 @@
   <script src="js/stamps-config.js"></script>
   <script src="js/app.js"></script>
   <script>
-    // ページ初期化
     document.addEventListener('DOMContentLoaded', () => {
       renderStampGrid();
-
-      // 開発中はデバッグセクションを表示（本番では削除すること）
-      const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-      if (isDev) {
-        document.getElementById('debug-section').classList.remove('hidden');
-      }
+      renderTestButtons();
     });
 
-    // QRスキャン（今後実装予定 - 現在はカメラを開く）
+    // テスト用ボタンを生成
+    function renderTestButtons() {
+      const container = document.getElementById('test-stamp-buttons');
+      if (!container) return;
+      const collected = getCollectedStamps();
+      container.innerHTML = STAMPS_CONFIG.map((stamp) => {
+        const done = collected.includes(stamp.id);
+        return `
+          <button
+            class="test-stamp-btn ${done ? 'done' : ''}"
+            style="--stamp-color: ${stamp.color}"
+            onclick="simulateStamp(${stamp.id})"
+          >
+            <span class="test-btn-emoji">${done ? '✅' : stamp.emoji}</span>
+            <span class="test-btn-label">${stamp.name}</span>
+            <span class="test-btn-state">${done ? '取得済み' : 'タップで取得'}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // スタンプ取得シミュレート
+    function simulateStamp(id) {
+      const isNew = collectStamp(id);
+      renderStampGrid();
+      renderTestButtons();
+      if (isNew) {
+        const stamp = getStampById(id);
+        showToast(`${stamp.emoji} ${stamp.name} を取得しました！`);
+        if (isComplete()) {
+          setTimeout(() => showToast('🎉 全スタンプコンプリート！'), 800);
+        }
+      } else {
+        showToast('このスタンプはすでに取得済みです');
+      }
+    }
+
+    // トースト通知
+    function showToast(msg) {
+      const existing = document.getElementById('toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.textContent = msg;
+      toast.style.cssText = `
+        position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+        background:rgba(0,0,0,0.82); color:white; padding:10px 20px;
+        border-radius:999px; font-size:0.9rem; z-index:9999; white-space:nowrap;
+        opacity:0; transition:all 0.25s ease; pointer-events:none;
+        max-width:90vw; text-overflow:ellipsis; overflow:hidden;
+      `;
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+      });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    // QRスキャン（今後実装予定）
     function openQRScanner() {
-      alert('QRスキャン機能は今後実装予定です。\n各スポットのQRコードを読み取ってください。');
+      showToast('QRスキャン機能は今後実装予定です');
     }
   </script>
 </body>
