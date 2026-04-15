@@ -3,7 +3,8 @@ name: GitHub Pages デプロイ
 on:
   push:
     branches:
-      - main   # main ブランチへのプッシュで自動デプロイ
+      - main
+  workflow_dispatch:   # 手動実行ボタンも有効化
 
 permissions:
   contents: read
@@ -11,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: "pages"
   cancel-in-progress: false
 
 jobs:
@@ -24,14 +25,14 @@ jobs:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
 
-      - name: Pages を設定
-        uses: actions/configure-pages@v4
+      - name: GitHub Pages を設定
+        uses: actions/configure-pages@v5
 
       - name: 静的ファイルをアップロード
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'   # リポジトリルートをそのまま公開
+          path: '.'
 
-      - name: Pages にデプロイ
+      - name: GitHub Pages にデプロイ
         id: deployment
         uses: actions/deploy-pages@v4
