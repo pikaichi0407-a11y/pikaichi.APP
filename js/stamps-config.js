@@ -2,6 +2,11 @@
  * スタンプラリー設定ファイル
  * 各スタンプのスポット名・説明・3Dモデルパスなどを定義する。
  * キャラクター名やスポット情報はここだけ変更すれば全体に反映される。
+ *
+ * ── モデルについて ──
+ * model: Blenderで作った.glbファイルのパス。
+ *        ファイルが存在しない場合は placeholder の形状が表示される。
+ * placeholder: .glbが未準備のときにARに表示する仮の3D形状設定。
  */
 
 const STAMPS_CONFIG = [
@@ -11,11 +16,19 @@ const STAMPS_CONFIG = [
     subtitle: '最初のスタンプ',
     description: 'ここでスタンプを集めてスタートしよう！',
     model: 'assets/models/character1.glb',
-    modelScale: '0.5 0.5 0.5',      // AR表示時のスケール
-    modelPosition: '0 0 0',          // AR表示時のオフセット
-    modelRotation: '0 0 0',          // AR表示時の回転
-    color: '#FF6B6B',                // UIアクセントカラー
+    modelScale: '0.5 0.5 0.5',
+    modelPosition: '0 0 0',
+    modelRotation: '0 0 0',
+    color: '#FF6B6B',
     emoji: '🌟',
+    // ── プレースホルダー（仮オブジェクト）設定 ──
+    placeholder: {
+      shape: 'a-box',           // A-Frame プリミティブタグ名
+      color: '#FF6B6B',
+      scale: '0.45 0.45 0.45',
+      position: '0 0.3 0',
+      label: '立方体',
+    },
   },
   {
     id: 2,
@@ -28,6 +41,13 @@ const STAMPS_CONFIG = [
     modelRotation: '0 0 0',
     color: '#4ECDC4',
     emoji: '🌊',
+    placeholder: {
+      shape: 'a-sphere',
+      color: '#4ECDC4',
+      scale: '0.35 0.35 0.35',
+      position: '0 0.35 0',
+      label: '球体',
+    },
   },
   {
     id: 3,
@@ -40,6 +60,13 @@ const STAMPS_CONFIG = [
     modelRotation: '0 0 0',
     color: '#FFE66D',
     emoji: '⚡',
+    placeholder: {
+      shape: 'a-cone',
+      color: '#FFE66D',
+      scale: '0.4 0.6 0.4',
+      position: '0 0.35 0',
+      label: 'コーン',
+    },
   },
   {
     id: 4,
@@ -52,6 +79,13 @@ const STAMPS_CONFIG = [
     modelRotation: '0 0 0',
     color: '#A8E6CF',
     emoji: '🌿',
+    placeholder: {
+      shape: 'a-cylinder',
+      color: '#A8E6CF',
+      scale: '0.25 0.55 0.25',
+      position: '0 0.35 0',
+      label: '円柱',
+    },
   },
   {
     id: 5,
@@ -64,6 +98,13 @@ const STAMPS_CONFIG = [
     modelRotation: '0 0 0',
     color: '#C9B1FF',
     emoji: '👑',
+    placeholder: {
+      shape: 'a-torus',
+      color: '#C9B1FF',
+      scale: '0.35 0.35 0.35',
+      position: '0 0.35 0',
+      label: 'トーラス',
+    },
   },
 ];
 
