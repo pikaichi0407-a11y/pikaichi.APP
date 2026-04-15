@@ -44,6 +44,28 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── スタンプGET通知 ── */
+    #stamp-get-notif {
+      position: fixed; inset: 0;
+      background: rgba(21, 101, 192, 0.95);
+      display: none;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; z-index: 3000;
+      color: white; text-align: center; padding: 32px;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #stamp-get-notif.show { display: flex; }
+    .get-emoji  { font-size: 5rem; line-height: 1; }
+    .get-title  { font-size: 1.6rem; font-weight: 700; }
+    .get-name   { font-size: 1rem; opacity: 0.9; }
+    .get-hint   { font-size: 0.8rem; opacity: 0.65; margin-top: 8px; }
+    @keyframes popIn {
+      0%   { transform: scale(0.6); opacity: 0; }
+      70%  { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
     /* ── マーカーガイドモーダル ── */
     #marker-modal {
       position: fixed; inset: 0;
@@ -53,33 +75,44 @@
       align-items: center; justify-content: center;
       padding: 28px; gap: 14px;
       color: white; text-align: center;
+      overflow-y: auto;
     }
     #marker-modal.hidden { display: none; }
 
-    .modal-shape-preview {
-      width: 100px; height: 100px;
-      border-radius: 16px;
+    .modal-char-preview {
+      width: 110px; height: 110px;
+      border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 3rem;
+      font-size: 3.5rem;
       box-shadow: 0 0 40px rgba(255,255,255,0.15);
+      overflow: hidden;
+      flex-shrink: 0;
     }
+    .modal-char-preview img {
+      width: 100%; height: 100%; object-fit: contain;
+    }
+
     #marker-modal h2 { font-size: 1.2rem; font-weight: 700; }
     #marker-modal .modal-sub {
       font-size: 0.82rem; opacity: 0.7; line-height: 1.65;
     }
-    #marker-modal .shape-hint {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px;
-      padding: 10px 16px;
-      font-size: 0.8rem;
-      opacity: 0.85;
-    }
     #marker-modal img.hiro-img {
-      width: 180px; height: 180px;
+      width: 160px; height: 160px;
       border: 3px solid rgba(255,255,255,0.5);
       border-radius: 12px;
     }
+
+    .hiro-guide-box {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      text-align: left;
+      line-height: 1.7;
+      opacity: 0.85;
+    }
+
     #btn-start-ar {
       background: #5C6BC0;
       color: white; border: none;
@@ -90,6 +123,10 @@
       transition: background 0.2s;
     }
     #btn-start-ar:active { background: #3949AB; }
+    .btn-skip {
+      color: rgba(255,255,255,0.45); font-size: 0.82rem;
+      background: none; border: none; cursor: pointer; padding: 4px;
+    }
 
     /* ── エラー ── */
     #ar-error {
@@ -119,15 +156,7 @@
     }
     #ar-overlay.hidden { display: none; }
     #ar-title  { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
-    #ar-hint   { font-size: 0.8rem; opacity: 0.8; margin-bottom: 6px; }
-    #ar-shape-label {
-      display: inline-block;
-      background: rgba(255,255,255,0.15);
-      border-radius: 999px;
-      padding: 3px 12px;
-      font-size: 0.72rem;
-      opacity: 0.85;
-    }
+    #ar-hint   { font-size: 0.8rem; opacity: 0.8; }
 
     /* ── 戻るボタン ── */
     #ar-back {
@@ -146,7 +175,7 @@
     }
     #ar-back.hidden { display: none; }
 
-    /* ── マーカー未検出インジケーター ── */
+    /* ── マーカー検出インジケーター ── */
     #scanning-indicator {
       position: fixed;
       top: max(14px, env(safe-area-inset-top));
@@ -181,9 +210,17 @@
   <p>ARを準備しています…</p>
 </div>
 
+<!-- スタンプGET通知（新規取得時） -->
+<div id="stamp-get-notif">
+  <div class="get-emoji" id="get-emoji"></div>
+  <div class="get-title">スタンプGET！</div>
+  <div class="get-name" id="get-name"></div>
+  <div class="get-hint">ARマーカーにカメラを向けてキャラクターを出現させよう！</div>
+</div>
+
 <!-- マーカーガイドモーダル -->
 <div id="marker-modal" class="hidden">
-  <div id="modal-shape-icon" class="modal-shape-preview"></div>
+  <div id="modal-char-preview" class="modal-char-preview"></div>
   <h2 id="modal-title">キャラクターをARで見る</h2>
   <p class="modal-sub">
     以下の <strong>Hiroマーカー</strong> を印刷するか、<br>
@@ -195,12 +232,17 @@
     alt="Hiroマーカー"
     onerror="this.style.display='none'"
   />
-  <p class="shape-hint" id="modal-shape-hint">仮オブジェクト表示中（.glb未配置）</p>
+  <div class="hiro-guide-box">
+    📸 カメラをマーカーに向けると<br>
+    キャラクターが画面に飛び出します！<br>
+    🔆 明るい場所で試してください。
+  </div>
   <p class="modal-sub" style="font-size:0.76rem;">
     ⚠️ カメラの許可を求められたら「許可」を選んでください。<br>
-    iOSは Safari、AndroidはChromeで開いてください。
+    iOSはSafari、AndroidはChromeで開いてください。
   </p>
   <button id="btn-start-ar">ARを開始する ▶</button>
+  <button class="btn-skip" onclick="window.location.href='index.html'">スタンプ帳へ戻る</button>
 </div>
 
 <!-- エラー -->
@@ -214,7 +256,6 @@
 <div id="ar-overlay" class="hidden">
   <p id="ar-title">スポット名</p>
   <p id="ar-hint">Hiroマーカーにカメラを向けてください</p>
-  <span id="ar-shape-label"></span>
 </div>
 
 <!-- 戻るボタン -->
@@ -240,29 +281,34 @@
   vr-mode-ui="enabled: false"
   style="display:none;"
 >
-  <!--
-    Hiro マーカー
-    マーカーが検出されると中の要素が表示される
-  -->
-  <a-marker id="hiro-marker" preset="hiro">
-    <!--
-      プレースホルダー形状コンテナ
-      JS から形状・色を動的に設定する
-    -->
-    <a-entity id="ar-character-container"></a-entity>
+  <a-assets id="scene-assets" timeout="10000"></a-assets>
 
-    <!-- マーカー上の発光リング -->
+  <!-- Hiro マーカー -->
+  <a-marker preset="hiro" id="hiro-marker">
+
+    <!-- キャラクター画像ビルボードパネル（カメラの方を向く） -->
+    <a-image
+      id="ar-character-img"
+      visible="false"
+      width="1.5"
+      height="1.5"
+      position="0 0.75 0"
+      look-at="[camera]"
+    ></a-image>
+
+    <!-- 地面発光リング -->
     <a-circle
+      id="ground-ring-outer"
       color="#5C6BC0"
-      opacity="0.25"
-      radius="0.65"
+      opacity="0.3"
+      radius="0.75"
       rotation="-90 0 0"
       position="0 0.01 0"
     ></a-circle>
     <a-circle
       color="#5C6BC0"
       opacity="0.1"
-      radius="0.85"
+      radius="1.0"
       rotation="-90 0 0"
       position="0 0.005 0"
     ></a-circle>
@@ -274,58 +320,88 @@
 <script src="js/stamps-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-  // ---- 初期化 ----
+  // ── 初期化 ──
   document.addEventListener('DOMContentLoaded', () => {
     const id      = getStampIdFromURL();
     const errorEl = document.getElementById('ar-error');
-    const errMsg  = document.getElementById('ar-error-msg');
     const loading = document.getElementById('ar-loading');
     const modal   = document.getElementById('marker-modal');
 
-    // ID チェック
     if (!id || !getStampById(id)) {
       loading.style.display = 'none';
       errorEl.classList.add('show');
       return;
     }
 
-    // 未取得チェック
-    if (!isStampCollected(id)) {
-      loading.style.display = 'none';
-      errMsg.textContent = 'このスタンプはまだ取得されていません。\nQRコードをスキャンしてください。';
-      errorEl.classList.add('show');
-      return;
-    }
-
     const stamp = getStampById(id);
 
-    // モーダルのプレビューをスタンプに合わせて設定
-    document.getElementById('modal-title').textContent
-      = `${stamp.emoji} ${stamp.name} をARで見る`;
-    const iconEl = document.getElementById('modal-shape-icon');
-    iconEl.textContent = stamp.emoji;
-    iconEl.style.background = stamp.color + '33'; // 20% opacity
-    iconEl.style.border = `2px solid ${stamp.color}`;
+    // スタンプを取得（まだの場合のみ）
+    const isNew = collectStamp(id);
 
-    const hintEl = document.getElementById('modal-shape-hint');
-    hintEl.textContent = stamp.model
-      ? `🎮 仮オブジェクト: ${stamp.placeholder.label}（.glb 配置後にキャラクターに変わります）`
-      : `🎮 仮オブジェクト: ${stamp.placeholder.label}`;
+    // モーダルのキャラクタープレビュー設定
+    const previewEl = document.getElementById('modal-char-preview');
+    previewEl.style.background = stamp.color + '33';
+    previewEl.style.border = `3px solid ${stamp.color}`;
+    if (stamp.image) {
+      const previewImg = document.createElement('img');
+      previewImg.src = stamp.image;
+      previewImg.alt = stamp.name;
+      previewImg.onerror = () => {
+        previewEl.removeChild(previewImg);
+        previewEl.textContent = stamp.emoji;
+      };
+      previewEl.appendChild(previewImg);
+    } else {
+      previewEl.textContent = stamp.emoji;
+    }
+    document.getElementById('modal-title').textContent = `${stamp.name} をARで見よう！`;
 
-    // ロード完了 → モーダル表示
-    setTimeout(() => {
-      loading.style.display = 'none';
-      modal.classList.remove('hidden');
-    }, 700);
+    if (isNew) {
+      // 新規取得 → GET通知を先に見せてからモーダルへ
+      showGetNotification(stamp, () => {
+        loading.style.display = 'none';
+        modal.classList.remove('hidden');
+      });
+    } else {
+      setTimeout(() => {
+        loading.style.display = 'none';
+        modal.classList.remove('hidden');
+      }, 700);
+    }
 
-    // 「ARを開始する」ボタン
     document.getElementById('btn-start-ar').addEventListener('click', () => {
       modal.classList.add('hidden');
       startAR(stamp);
     });
   });
 
-  // ---- AR 開始 ----
+  // ── スタンプGET通知 ──
+  function showGetNotification(stamp, callback) {
+    const notif  = document.getElementById('stamp-get-notif');
+    const emojiEl = document.getElementById('get-emoji');
+    const nameEl  = document.getElementById('get-name');
+
+    emojiEl.textContent = stamp.emoji;
+    nameEl.textContent  = stamp.name;
+    notif.style.background = stamp.color + 'F0';
+    notif.classList.add('show');
+
+    // ローディングは隠す
+    document.getElementById('ar-loading').style.display = 'none';
+
+    setTimeout(() => {
+      notif.style.transition = 'opacity 0.5s ease';
+      notif.style.opacity = '0';
+      setTimeout(() => {
+        notif.classList.remove('show');
+        notif.style.opacity = '';
+        notif.style.transition = '';
+        if (callback) callback();
+      }, 500);
+    }, 1800);
+  }
+
+  // ── AR 開始 ──
   function startAR(stamp) {
     const scene     = document.getElementById('ar-scene');
     const overlay   = document.getElementById('ar-overlay');
@@ -337,11 +413,11 @@
     backBtn.classList.remove('hidden');
     indicator.classList.remove('hidden');
 
-    // 下部テキスト設定
-    document.getElementById('ar-title').textContent
-      = `${stamp.emoji} ${stamp.name}`;
-    document.getElementById('ar-shape-label').textContent
-      = `仮オブジェクト: ${stamp.placeholder.label}`;
+    document.getElementById('ar-title').textContent = `${stamp.emoji} ${stamp.name}`;
+
+    // 地面リングのカラーをスタンプカラーに
+    const ringEl = document.getElementById('ground-ring-outer');
+    if (ringEl) ringEl.setAttribute('color', stamp.color);
 
     if (scene.hasLoaded) {
       buildCharacter(stamp);
@@ -352,82 +428,33 @@
     // マーカー検出イベント
     const marker = document.getElementById('hiro-marker');
     marker.addEventListener('markerFound', () => {
-      const dot  = document.getElementById('scan-dot');
-      const text = document.getElementById('scan-text');
-      if (dot)  dot.classList.add('found');
-      if (text) text.textContent = 'マーカー検出！';
+      document.getElementById('scan-dot').classList.add('found');
+      document.getElementById('scan-text').textContent = 'キャラクター表示中！';
     });
     marker.addEventListener('markerLost', () => {
-      const dot  = document.getElementById('scan-dot');
-      const text = document.getElementById('scan-text');
-      if (dot)  dot.classList.remove('found');
-      if (text) text.textContent = 'マーカーを探しています';
+      document.getElementById('scan-dot').classList.remove('found');
+      document.getElementById('scan-text').textContent = 'マーカーを探しています';
     });
   }
 
-  // ---- プレースホルダー形状をシーンに生成 ----
+  // ── キャラクター画像ビルボードをシーンに設定 ──
   function buildCharacter(stamp) {
-    const container = document.getElementById('ar-character-container');
-    if (!container) return;
+    const imgEl = document.getElementById('ar-character-img');
+    if (!imgEl || !stamp.image) return;
 
-    // 既存の子要素をクリア
-    container.innerHTML = '';
+    // 画像をマテリアルとしてセット（透過PNG対応）
+    imgEl.setAttribute(
+      'material',
+      `src: url(${stamp.image}); transparent: true; alphaTest: 0.1; side: double;`
+    );
+    imgEl.setAttribute('visible', 'true');
 
-    const ph = stamp.placeholder;
-    const glbPath = stamp.model;
-
-    // .glb ファイルが存在するか HEAD リクエストで確認
-    checkFileExists(glbPath).then((exists) => {
-      if (exists) {
-        // GLB が存在する → gltf-model エンティティを生成
-        const entity = document.createElement('a-entity');
-        entity.setAttribute('gltf-model', `url(${glbPath})`);
-        entity.setAttribute('scale', stamp.modelScale);
-        entity.setAttribute('position', stamp.modelPosition);
-        entity.setAttribute('rotation', stamp.modelRotation);
-        entity.setAttribute('animation',
-          'property: rotation; to: 0 360 0; loop: true; dur: 5000; easing: linear;');
-        container.appendChild(entity);
-      } else {
-        // GLB が存在しない → プレースホルダー形状を表示
-        buildPlaceholder(container, ph);
-      }
-    });
-  }
-
-  function buildPlaceholder(container, ph) {
-    // メイン形状
-    const shape = document.createElement(ph.shape);
-    shape.setAttribute('color', ph.color);
-    shape.setAttribute('scale', ph.scale);
-    shape.setAttribute('position', ph.position);
-    shape.setAttribute('roughness', '0.3');
-    shape.setAttribute('metalness', '0.2');
-    // Y軸回転アニメーション
-    shape.setAttribute('animation__rot',
-      'property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear;');
     // 上下に浮遊するアニメーション
-    const baseY = parseFloat(ph.position.split(' ')[1]);
-    shape.setAttribute('animation__float',
-      `property: position; from: ${ph.position}; to: 0 ${baseY + 0.08} 0; ` +
-      'dir: alternate; loop: true; dur: 1800; easing: easeInOutSine;');
-    container.appendChild(shape);
-
-    // 影リング（地面エフェクト）
-    const shadow = document.createElement('a-circle');
-    shadow.setAttribute('color', ph.color);
-    shadow.setAttribute('opacity', '0.18');
-    shadow.setAttribute('radius', '0.28');
-    shadow.setAttribute('rotation', '-90 0 0');
-    shadow.setAttribute('position', '0 0.01 0');
-    container.appendChild(shadow);
-  }
-
-  // ---- ファイル存在確認 ----
-  function checkFileExists(path) {
-    return fetch(path, { method: 'HEAD' })
-      .then((r) => r.ok)
-      .catch(() => false);
+    imgEl.setAttribute(
+      'animation__float',
+      'property: position; from: 0 0.75 0; to: 0 0.92 0; ' +
+      'dir: alternate; loop: true; dur: 2200; easing: easeInOutSine;'
+    );
   }
 </script>
 </body>

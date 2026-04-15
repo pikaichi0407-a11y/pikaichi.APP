@@ -219,15 +219,15 @@
   function onSuccess(text) {
     if (!active) return;
 
-    // スタンプURLからIDを抽出
+    // スタンプURLからIDを抽出（ar.html / stamp.html 両対応）
     let stampId = null;
     try {
       const url = new URL(text);
-      if (url.pathname.includes('stamp.html')) {
+      if (url.pathname.includes('ar.html') || url.pathname.includes('stamp.html')) {
         stampId = url.searchParams.get('id');
       }
     } catch {
-      const m = text.match(/stamp\.html\?(?:.*&)?id=(\d+)/);
+      const m = text.match(/(?:ar|stamp)\.html\?(?:.*&)?id=(\d+)/);
       if (m) stampId = m[1];
     }
 
@@ -241,7 +241,7 @@
               : `スタンプ${id} のページへ移動します...`;
       document.getElementById('success-overlay').classList.add('show');
       scanner.stop().catch(() => {});
-      setTimeout(() => { window.location.href = `stamp.html?id=${id}`; }, 900);
+      setTimeout(() => { window.location.href = `ar.html?id=${id}`; }, 900);
     } else {
       // 無効なQR → 警告を出してスキャン継続
       const now = Date.now();
