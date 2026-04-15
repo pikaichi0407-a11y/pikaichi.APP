@@ -175,6 +175,18 @@ a {
   margin-top: 2px;
 }
 
+.stamp-shape-badge {
+  display: inline-block;
+  margin-top: 4px;
+  background: #EDE7F6;
+  color: #512DA8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
 .btn-ar {
   background: var(--primary);
   color: white;

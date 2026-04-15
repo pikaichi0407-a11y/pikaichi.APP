@@ -82,6 +82,7 @@ function renderStampGrid() {
 
   grid.innerHTML = STAMPS_CONFIG.map((stamp) => {
     const done = collected.includes(stamp.id);
+    const shapeLabel = stamp.placeholder ? stamp.placeholder.label : '';
     return `
       <div class="stamp-card ${done ? 'collected' : 'locked'}">
         <div class="stamp-icon" style="background:${done ? stamp.color : '#ccc'}">
@@ -90,6 +91,7 @@ function renderStampGrid() {
         <div class="stamp-info">
           <p class="stamp-name">${stamp.name}</p>
           <p class="stamp-sub">${done ? stamp.subtitle : '未取得'}</p>
+          ${done && shapeLabel ? `<p class="stamp-shape-badge">仮: ${shapeLabel}</p>` : ''}
         </div>
         ${done ? `<a class="btn-ar" href="ar.html?id=${stamp.id}">ARで見る</a>` : ''}
       </div>
