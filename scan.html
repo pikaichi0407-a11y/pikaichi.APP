@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0d1a" />
+  <title>QRスキャン - ARスタンプラリー</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body { background: #0d0d1a; color: white; }
+
+    .scan-header {
+      background: rgba(255,255,255,0.06);
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .scan-header h1 { font-size: 1.1rem; font-weight: 700; }
+    .scan-header p  { font-size: 0.8rem; opacity: 0.65; margin-top: 4px; }
+
+    .scan-main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* ── ビューファインダー ── */
+    .viewfinder {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 1;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: #1a1a2e;
+      box-shadow: 0 0 40px rgba(92,107,192,0.3);
+    }
+
+    #qr-reader {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* html5-qrcode が注入する余分なUIを非表示 */
+    #qr-reader select,
+    #qr-reader__header_message,
+    #qr-reader__dashboard_section_swaplink { display: none !important; }
+    #qr-reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover;
+    }
+
+    /* 起動前プレースホルダー */
+    #vf-placeholder {
+      position: absolute; inset: 0; z-index: 5;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; background: #1a1a2e;
+    }
+    #vf-placeholder .ph-icon { font-size: 3.5rem; }
+    #vf-placeholder p { font-size: 0.85rem; color: rgba(255,255,255,0.45); }
+
+    /* コーナーフレーム */
+    .corner-frame {
+      position: absolute; inset: 0; z-index: 10;
+      pointer-events: none; display: none;
+    }
+    .corner-frame::before, .corner-frame::after,
+    .corner-frame > span::before, .corner-frame > span::after {
+      content: '';
+      position: absolute;
+      width: 28px; height: 28px;
+      border-color: white; border-style: solid;
+    }
+    .corner-frame::before  { top:12px; left:12px;  border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+    .corner-frame::after   { top:12px; right:12px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+    .corner-frame > span::before { bottom:12px; left:12px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+    .corner-frame > span::after  { bottom:12px; right:12px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+    /* スキャンライン */
+    #scan-line {
+      position: absolute; left:20px; right:20px; height:2px;
+      background: linear-gradient(90deg, transparent, #5C6BC0, white, #5C6BC0, transparent);
+      animation: scanMove 2s ease-in-out infinite;
+      z-index: 11; display: none;
+    }
+    @keyframes scanMove { 0%,100%{ top:15%; } 50%{ top:80%; } }
+
+    /* ── ステータスバッジ ── */
+    .status-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 999px;
+      font-size: 0.88rem; font-weight: 700;
+      min-width: 240px; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white; background: rgba(255,255,255,0.07);
+    }
+    .status-pill.scanning {
+      background: rgba(92,107,192,0.25);
+      border-color: rgba(92,107,192,0.5);
+    }
+    .status-pill.success { background: rgba(46,125,50,0.35); border-color: #66BB6A; }
+    .status-pill.error   { background: rgba(198,40,40,0.3);  border-color: #EF5350; }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #7986CB;
+      animation: pdp 1.2s ease-in-out infinite;
+    }
+    @keyframes pdp { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    /* ── ボタン ── */
+    #btn-start {
+      background: #5C6BC0; color: white; border: none;
+      border-radius: 999px; padding: 15px 0;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      width: 100%; max-width: 280px;
+      box-shadow: 0 4px 20px rgba(92,107,192,0.5);
+    }
+    #btn-start:active { background: #3949AB; transform: scale(0.97); }
+
+    .back-link {
+      color: rgba(255,255,255,0.5); font-size: 0.9rem; padding: 8px 16px;
+    }
+
+    /* ── 成功オーバーレイ ── */
+    #success-overlay {
+      position: fixed; inset: 0;
+      background: rgba(27,94,32,0.94);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 9999;
+      text-align: center; padding: 24px;
+    }
+    #success-overlay.show { display: flex; }
+    .success-icon  { font-size: 4.5rem; }
+    .success-title { font-size: 1.4rem; font-weight: 700; }
+    .success-sub   { font-size: 0.9rem; opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<header class="scan-header">
+  <h1>&#128247; QRコードスキャン</h1>
+  <p>スタンプのQRコードにカメラを向けてください</p>
+</header>
+
+<main class="scan-main">
+
+  <!-- ビューファインダー -->
+  <div class="viewfinder">
+    <div id="qr-reader"></div>
+    <div id="vf-placeholder">
+      <div class="ph-icon">&#128247;</div>
+      <p>「スキャン開始」を押してください</p>
+    </div>
+    <div class="corner-frame" id="corner-frame"><span></span></div>
+    <div id="scan-line"></div>
+  </div>
+
+  <!-- ステータス -->
+  <div class="status-pill" id="status-pill">QRコードを読み取ります</div>
+
+  <!-- 開始ボタン -->
+  <button id="btn-start" onclick="startScan()">&#128247; スキャン開始</button>
+
+  <a href="index.html" class="back-link">&#8592; スタンプ帳に戻る</a>
+
+</main>
+
+<!-- 成功オーバーレイ -->
+<div id="success-overlay">
+  <div class="success-icon">&#9989;</div>
+  <div class="success-title">QRコード読み取り成功！</div>
+  <div class="success-sub" id="success-sub">スタンプページへ移動します...</div>
+</div>
+
+<script src="js/stamps-config.js"></script>
+<script>
+  let scanner  = null;
+  let active   = false;
+  let lastErrT = 0;
+
+  function setStatus(text, type) {
+    const el = document.getElementById('status-pill');
+    el.className = 'status-pill' + (type ? ' ' + type : '');
+    el.innerHTML = type === 'scanning'
+      ? `<span class="pulse-dot"></span><span>${text}</span>`
+      : text;
+  }
+
+  function startScan() {
+    document.getElementById('btn-start').style.display = 'none';
+    setStatus('カメラを起動中...', '');
+
+    scanner = new Html5Qrcode('qr-reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1 },
+      onSuccess,
+      () => {}  // QR未検出エラーは無視
+    ).then(() => {
+      active = true;
+      document.getElementById('vf-placeholder').style.display = 'none';
+      document.getElementById('corner-frame').style.display  = 'block';
+      document.getElementById('scan-line').style.display     = 'block';
+      setStatus('スキャン中... QRコードに向けてください', 'scanning');
+    }).catch(() => {
+      document.getElementById('btn-start').style.display = 'block';
+      setStatus('⚠️ カメラを起動できません。カメラへのアクセスを許可してください', 'error');
+    });
+  }
+
+  function onSuccess(text) {
+    if (!active) return;
+
+    // スタンプURLからIDを抽出
+    let stampId = null;
+    try {
+      const url = new URL(text);
+      if (url.pathname.includes('stamp.html')) {
+        stampId = url.searchParams.get('id');
+      }
+    } catch {
+      const m = text.match(/stamp\.html\?(?:.*&)?id=(\d+)/);
+      if (m) stampId = m[1];
+    }
+
+    const id = Number(stampId);
+    if (id >= 1 && id <= 5) {
+      // 有効なスタンプQR ✅
+      active = false;
+      const stamp = STAMPS_CONFIG.find(s => s.id === id);
+      document.getElementById('success-sub').textContent =
+        stamp ? `${stamp.emoji} ${stamp.name} のページへ移動します...`
+              : `スタンプ${id} のページへ移動します...`;
+      document.getElementById('success-overlay').classList.add('show');
+      scanner.stop().catch(() => {});
+      setTimeout(() => { window.location.href = `stamp.html?id=${id}`; }, 900);
+    } else {
+      // 無効なQR → 警告を出してスキャン継続
+      const now = Date.now();
+      if (now - lastErrT > 2500) {
+        lastErrT = now;
+        setStatus('⚠️ スタンプ用QRコードではありません', 'error');
+        setTimeout(() => {
+          if (active) setStatus('スキャン中... QRコードに向けてください', 'scanning');
+        }, 2500);
+      }
+    }
+  }
+</script>
+</body>
+</html>

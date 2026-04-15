@@ -12,22 +12,22 @@
 const STAMPS_CONFIG = [
   {
     id: 1,
-    name: 'スポット1',
-    subtitle: '最初のスタンプ',
-    description: 'ここでスタンプを集めてスタートしよう！',
+    name: 'サメのスポット',
+    subtitle: '海の王者をゲット！',
+    description: '伝説の海のハンター・サメキャラクターがARで登場！',
     model: 'assets/models/character1.glb',
     modelScale: '0.5 0.5 0.5',
     modelPosition: '0 0 0',
     modelRotation: '0 0 0',
-    color: '#FF6B6B',
-    emoji: '🌟',
+    color: '#1565C0',
+    emoji: '🦈',
     // ── プレースホルダー（仮オブジェクト）設定 ──
     placeholder: {
-      shape: 'a-box',           // A-Frame プリミティブタグ名
-      color: '#FF6B6B',
-      scale: '0.45 0.45 0.45',
-      position: '0 0.3 0',
-      label: '立方体',
+      shape: 'a-cone',          // A-Frame プリミティブタグ名
+      color: '#1565C0',
+      scale: '0.3 0.5 0.15',
+      position: '0 0.35 0',
+      label: 'サメのヒレ(仮)',
     },
   },
   {

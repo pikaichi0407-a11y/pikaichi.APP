@@ -7,6 +7,7 @@
   <meta name="description" content="ARスタンプラリー - QRコードを読んでキャラクターをARで見よう！" />
   <title>ARスタンプラリー</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -21,7 +22,7 @@
     <!-- コンプリートバナー（全取得時に表示） -->
     <div id="complete-banner" class="complete-banner hidden">
       <h2>&#127881; コンプリート！</h2>
-      <p>全5つのスタンプをコンテナ！おめでとうございます！</p>
+      <p>全5つのスタンプを集めました！おめでとうございます！</p>
     </div>
 
     <!-- 進捗表示 -->
@@ -38,7 +39,6 @@
     <!-- スタンプカード一覧 -->
     <section>
       <div id="stamp-grid" class="stamp-grid">
-        <!-- JS で動的生成 -->
         <p class="text-center" style="color:var(--text-sub);padding:20px;">読み込み中...</p>
       </div>
     </section>
@@ -52,14 +52,25 @@
       <p class="test-panel-desc">
         仮ボタンでスタンプ取得をシミュレート。<br>実機ではQRコードが代わりになります。
       </p>
-      <div class="test-stamp-buttons" id="test-stamp-buttons">
-        <!-- JS で生成 -->
-      </div>
+      <div class="test-stamp-buttons" id="test-stamp-buttons"></div>
       <button class="btn-reset" onclick="resetAllStamps(); renderStampGrid(); renderTestButtons();">
         &#128260; 全リセット
       </button>
     </section>
-    <!-- ===== /テストパネル ===== -->
+
+    <!-- ===== スタンプ1 QRコード ===== -->
+    <section class="test-panel mt-16">
+      <div class="test-panel-header">
+        <span>&#129408; スタンプ1のQRコード</span>
+        <span class="test-badge" style="background:#1565C0;color:white;">QR</span>
+      </div>
+      <p class="test-panel-desc">
+        このQRコードをスキャンすると、<strong style="color:#90CAF9;">🦈 サメのスポット</strong>スタンプがゲットできます！<br>
+        下の「スキャン」ボタンか、スマホのカメラアプリで読み取れます。
+      </p>
+      <div id="qr-stamp-1" style="display:flex;justify-content:center;background:white;padding:16px;border-radius:12px;margin-bottom:8px;"></div>
+      <p style="text-align:center;font-size:0.72rem;color:#718096;word-break:break-all;" id="qr-url-label"></p>
+    </section>
 
     <!-- 使い方ガイド -->
     <section class="marker-guide mt-16">
@@ -77,7 +88,7 @@
       <span class="nav-icon">&#127381;</span>
       スタンプ帳
     </a>
-    <a href="#" onclick="openQRScanner(); return false;">
+    <a href="scan.html">
       <span class="nav-icon">&#128247;</span>
       スキャン
     </a>
@@ -89,6 +100,18 @@
     document.addEventListener('DOMContentLoaded', () => {
       renderStampGrid();
       renderTestButtons();
+
+      // スタンプ1のQRコード生成
+      const stampUrl = 'https://pikaichi0407-a11y.github.io/pikaichi.APP/stamp.html?id=1';
+      new QRCode(document.getElementById('qr-stamp-1'), {
+        text: stampUrl,
+        width: 200,
+        height: 200,
+        colorDark: '#1565C0',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+      document.getElementById('qr-url-label').textContent = stampUrl;
     });
 
     // テスト用ボタンを生成
@@ -152,11 +175,6 @@
         toast.style.transform = 'translateX(-50%) translateY(20px)';
         setTimeout(() => toast.remove(), 300);
       }, 2500);
-    }
-
-    // QRスキャン（今後実装予定）
-    function openQRScanner() {
-      showToast('QRスキャン機能は今後実装予定です');
     }
   </script>
 </body>
