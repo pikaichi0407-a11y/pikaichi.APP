@@ -1,29 +1,23 @@
 /**
  * スタンプラリー設定ファイル
- * 各スタンプのスポット名・説明・3Dモデルパスなどを定義する。
- * キャラクター名やスポット情報はここだけ変更すれば全体に反映される。
+ * 各スタンプのスポット名・説明・キャラクター画像パスなどを定義する。
  *
- * ── モデルについて ──
- * model: Blenderで作った.glbファイルのパス。
- *        ファイルが存在しない場合は placeholder の形状が表示される。
- * placeholder: .glbが未準備のときにARに表示する仮の3D形状設定。
+ * image: assets/characters/ に置くキャラクター画像（PNG/JPG/WebP）
+ *        未配置の場合は emoji がフォールバックとして表示される。
  */
 
 const STAMPS_CONFIG = [
   {
     id: 1,
     name: 'サメのスポット',
-    subtitle: '海の王者をゲット！',
-    description: '伝説の海のハンター・サメキャラクターがARで登場！',
+    subtitle: '海の王者・帽子サメをゲット！',
+    description: '緑ストライプの帽子と蝶ネクタイがトレードマーク！海の伝説のサメキャラクター！',
     model: 'assets/models/character1.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
+    image: 'assets/characters/character1.png',
     color: '#1565C0',
     emoji: '🦈',
-    // ── プレースホルダー（仮オブジェクト）設定 ──
     placeholder: {
-      shape: 'a-cone',          // A-Frame プリミティブタグ名
+      shape: 'a-cone',
       color: '#1565C0',
       scale: '0.3 0.5 0.15',
       position: '0 0.35 0',
@@ -32,78 +26,70 @@ const STAMPS_CONFIG = [
   },
   {
     id: 2,
-    name: 'スポット2',
-    subtitle: '2つ目のスタンプ',
-    description: 'ここで不思議なキャラクターに出会える！',
+    name: 'イルカのスポット',
+    subtitle: '海の使者・イルカをゲット！',
+    description: '巾着袋を大切に持つ、かわいい青いイルカキャラクター！',
     model: 'assets/models/character2.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#4ECDC4',
-    emoji: '🌊',
+    image: 'assets/characters/character2.png',
+    color: '#01579B',
+    emoji: '🐬',
     placeholder: {
       shape: 'a-sphere',
-      color: '#4ECDC4',
+      color: '#01579B',
       scale: '0.35 0.35 0.35',
       position: '0 0.35 0',
-      label: '球体',
+      label: '球体(イルカ仮)',
     },
   },
   {
     id: 3,
-    name: 'スポット3',
-    subtitle: '3つ目のスタンプ',
-    description: 'このキャラクターは特別な技を持っているよ！',
+    name: 'おてだまのスポット',
+    subtitle: 'ほっこりキャラをゲット！',
+    description: 'バケツを持ったほんわかかわいいキャラクター。会うと幸せになれる！',
     model: 'assets/models/character3.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#FFE66D',
-    emoji: '⚡',
+    image: 'assets/characters/character3.png',
+    color: '#F57F17',
+    emoji: '🎎',
     placeholder: {
-      shape: 'a-cone',
-      color: '#FFE66D',
-      scale: '0.4 0.6 0.4',
+      shape: 'a-cylinder',
+      color: '#F57F17',
+      scale: '0.25 0.55 0.25',
       position: '0 0.35 0',
-      label: 'コーン',
+      label: '円柱(人形仮)',
     },
   },
   {
     id: 4,
-    name: 'スポット4',
-    subtitle: '4つ目のスタンプ',
-    description: '森の奥深くに潜む神秘的な存在！',
+    name: 'ミツワちゃんスポット',
+    subtitle: '商店街の看板娘をゲット！',
+    description: 'ミツワ通り共栄会の公式キャラクター！商店街の守り神・巫女スタイルがかわいい！',
     model: 'assets/models/character4.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#A8E6CF',
-    emoji: '🌿',
+    image: 'assets/characters/character4.png',
+    color: '#B71C1C',
+    emoji: '⛩️',
     placeholder: {
-      shape: 'a-cylinder',
-      color: '#A8E6CF',
-      scale: '0.25 0.55 0.25',
+      shape: 'a-cone',
+      color: '#B71C1C',
+      scale: '0.4 0.6 0.4',
       position: '0 0.35 0',
-      label: '円柱',
+      label: 'コーン(巫女仮)',
     },
   },
   {
     id: 5,
-    name: 'スポット5',
-    subtitle: 'ラストスタンプ',
-    description: '全スタンプ制覇おめでとう！最後の伝説のキャラクター！',
+    name: 'レジェンドサメスポット',
+    subtitle: '伝説のレアキャラをゲット！',
+    description: '全スタンプ制覇おめでとう！リアルで迫力満点の伝説サメキャラクター！',
     model: 'assets/models/character5.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#C9B1FF',
-    emoji: '👑',
+    image: 'assets/characters/character5.png',
+    color: '#0D47A1',
+    emoji: '🏆',
     placeholder: {
       shape: 'a-torus',
-      color: '#C9B1FF',
+      color: '#0D47A1',
       scale: '0.35 0.35 0.35',
       position: '0 0.35 0',
-      label: 'トーラス',
+      label: 'トーラス(レアサメ仮)',
     },
   },
 ];
