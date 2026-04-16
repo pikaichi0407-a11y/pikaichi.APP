@@ -1,45 +1,14 @@
-name: Deploy to GitHub Pages
+# このワークフローは無効化しています。
+# GitHub Pages は「Deploy from a branch (gh-pages)」で運用しています。
+# 設定場所: Settings → Pages → Source: Deploy from a branch → gh-pages / (root)
+
+name: Deploy to GitHub Pages (disabled)
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-# GitHub Pages デプロイに必要な最小限の権限
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# 同時デプロイを防ぐ
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  workflow_dispatch:   # 手動実行のみ（自動トリガー無効）
 
 jobs:
-  # ── ビルド（ファイルをアーティファクトに固める）──
-  build:
+  placeholder:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "."   # リポジトリルートをそのまま公開
-
-  # ── デプロイ ──
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - run: echo "ワークフローは無効化されています。gh-pagesブランチから直接公開しています。"
