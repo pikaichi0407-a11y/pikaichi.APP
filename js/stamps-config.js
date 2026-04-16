@@ -18,6 +18,7 @@ const STAMPS_CONFIG = [
     image: './assets/shark-bite.PNG?v=4',
     color: '#1565C0',
     emoji: '🦈',
+    speech: 'ガブッ！とスタンプGETだぜ！',
   },
   {
     id: 2,
@@ -27,6 +28,7 @@ const STAMPS_CONFIG = [
     image: './assets/namazu-chan.PNG?v=4',
     color: '#283593',
     emoji: '🐟',
+    speech: '幸運を呼んじゃうよ！',
   },
   {
     id: 3,
@@ -36,6 +38,7 @@ const STAMPS_CONFIG = [
     image: './assets/real-shark.PNG?v=4',
     color: '#0D47A1',
     emoji: '🦈',
+    speech: '本気のサメの力、見せてやる！',
   },
   {
     id: 4,
@@ -45,6 +48,7 @@ const STAMPS_CONFIG = [
     image: './assets/mitsuwa-chan.PNG?v=4',
     color: '#B71C1C',
     emoji: '⛩️',
+    speech: 'ミツワ通りへようこそ！',
   },
   {
     id: 5,
@@ -54,6 +58,7 @@ const STAMPS_CONFIG = [
     image: './assets/tochiko-chan.PNG?v=4',
     color: '#E65100',
     emoji: '👧',
+    speech: '一緒に栃木を盛り上げよう！',
   },
 ];
 

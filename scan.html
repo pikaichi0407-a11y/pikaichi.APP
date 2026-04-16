@@ -188,6 +188,34 @@
       to   { transform: scale(1)   translateY(0);    opacity: 1; }
     }
 
+    /* 吹き出しセリフ */
+    .speech-bubble {
+      position: relative;
+      background: white;
+      color: #212121;
+      border-radius: 18px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      max-width: 85%;
+      animation: bubbleIn 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      top: -12px; left: 50%;
+      transform: translateX(-50%);
+      border: 8px solid transparent;
+      border-bottom-color: white;
+    }
+    .speech-bubble.hidden { display: none; }
+    @keyframes bubbleIn {
+      from { transform: scale(0.7) translateY(8px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);   opacity: 1; }
+    }
+
     .image-bottom {
       width: 100%;
       padding: 0 24px;
@@ -355,6 +383,10 @@
   </div>
   <div class="char-img-area">
     <img id="char-image" src="" alt="" />
+    <!-- セリフ吹き出し -->
+    <div class="speech-bubble hidden" id="speech-bubble">
+      <p id="speech-text"></p>
+    </div>
     <!-- 画像読み込み失敗時のエラー表示 -->
     <div id="img-error-info" style="display:none;text-align:center;padding:16px;">
       <p style="font-size:3rem;">&#128027;</p>
@@ -469,6 +501,15 @@
     if (!curStamp) return;
 
     curIsNew = collectStamp(id);
+
+    // 吹き出しセリフをセット
+    const bubble = document.getElementById('speech-bubble');
+    bubble.classList.add('hidden');
+    void bubble.offsetWidth; // アニメーションをリセット
+    if (curStamp.speech) {
+      document.getElementById('speech-text').textContent = '「' + curStamp.speech + '」';
+      bubble.classList.remove('hidden');
+    }
 
     // 画像エラー表示をリセット
     document.getElementById('img-error-info').style.display = 'none';
