@@ -6,10 +6,7 @@
  *   assets/namazu-chan.PNG  → ナマズちゃん    (ID:2)
  *   assets/real-shark.PNG  → リアルシャークバイト (ID:3)
  *   assets/mitsuwa-chan.PNG → ミツワちゃん    (ID:4)
- *   assets/tochiko-chan.heic → トチコちゃん  (ID:5) ※HEICはiOS Safariのみ表示可
- *
- * ⚠️ 注意: tochiko-chan.heicはAndroid/PCブラウザでは表示されません。
- *         JPGまたはPNGへの変換を推奨します。
+ *   assets/tochiko-chan.PNG  → トチコちゃん  (ID:5)
  */
 
 const STAMPS_CONFIG = [
