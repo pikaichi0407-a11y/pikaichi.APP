@@ -334,6 +334,16 @@
     </div>
     <div class="status-pill" id="status-pill">QRコードを読み取ります</div>
     <button id="btn-start" onclick="startScan()">&#128247; スキャン開始</button>
+
+    <!-- ナマズちゃん直接テストボタン（デバッグ用） -->
+    <button
+      onclick="showImagePhase(2)"
+      style="background:rgba(40,53,147,0.85);color:white;border:2px solid #5C6BC0;
+             border-radius:999px;padding:12px 24px;font-size:0.9rem;font-weight:700;
+             cursor:pointer;max-width:280px;width:100%;">
+      &#128027; ナマズちゃんをテスト表示
+    </button>
+
     <a href="index.html" class="back-link">&#8592; スタンプ帳に戻る</a>
   </div>
 </div>
@@ -345,6 +355,13 @@
   </div>
   <div class="char-img-area">
     <img id="char-image" src="" alt="" />
+    <!-- 画像読み込み失敗時のエラー表示 -->
+    <div id="img-error-info" style="display:none;text-align:center;padding:16px;">
+      <p style="font-size:3rem;">&#128027;</p>
+      <p style="font-size:0.8rem;opacity:0.7;margin-top:8px;">画像を読み込めませんでした</p>
+      <p id="img-error-url" style="font-size:0.65rem;opacity:0.5;word-break:break-all;margin-top:4px;background:rgba(255,255,255,0.08);padding:6px 10px;border-radius:8px;"></p>
+      <p style="font-size:0.72rem;opacity:0.6;margin-top:8px;">↑ このURLをブラウザで開いて画像が表示されるか確認してください</p>
+    </div>
   </div>
   <div class="image-bottom">
     <p id="img-char-name"></p>
@@ -453,17 +470,23 @@
 
     curIsNew = collectStamp(id);
 
-    // 画像をセット（onerrorで絵文字フォールバック）
+    // 画像エラー表示をリセット
+    document.getElementById('img-error-info').style.display = 'none';
+
+    // 画像をセット（onerror でエラーURL表示）
     const imgEl = document.getElementById('char-image');
+    imgEl.style.display = '';
     imgEl.src = curStamp.image;
     imgEl.alt = curStamp.name;
     imgEl.onerror = () => {
       imgEl.style.display = 'none';
-      // 絵文字を代わりに表示
-      const fb = document.createElement('span');
-      fb.textContent = curStamp.emoji;
-      fb.style.cssText = 'font-size:9rem;display:block;text-align:center;';
-      imgEl.parentNode.appendChild(fb);
+      // 試みたURLを表示してデバッグしやすくする
+      const errInfo = document.getElementById('img-error-info');
+      const errUrl  = document.getElementById('img-error-url');
+      // 絶対URLを表示
+      const absUrl = new URL(curStamp.image, location.href).href.split('?')[0];
+      errUrl.textContent = absUrl;
+      errInfo.style.display = 'block';
     };
 
     document.getElementById('img-stamp-no').textContent  = `STAMP #${curStamp.id}`;
