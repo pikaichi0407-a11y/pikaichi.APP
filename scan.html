@@ -5,34 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0d0d1a" />
   <title>QRスキャン - スタンプラリー</title>
-  <link rel="stylesheet" href="css/style.css" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
-    body { background: #0d0d1a; color: white; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+      background: #0d0d1a;
+      color: white;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ========================================
+       共通：各フェーズのページ全体コンテナ
+       ======================================== */
+    .phase {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .phase.hidden { display: none; }
+
+    /* ========================================
+       フェーズ1 : カメラスキャン
+       ======================================== */
+    #phase-scan {
+      background: #0d0d1a;
+      justify-content: flex-start;
+    }
 
     .scan-header {
+      width: 100%;
       background: rgba(255,255,255,0.06);
       padding: 16px;
       text-align: center;
       border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
     }
     .scan-header h1 { font-size: 1.1rem; font-weight: 700; }
-    .scan-header p  { font-size: 0.8rem; opacity: 0.65; margin-top: 4px; }
+    .scan-header p  { font-size: 0.8rem; opacity: 0.6; margin-top: 4px; }
 
-    .scan-main {
+    .scan-body {
+      flex: 1;
+      width: 100%;
       max-width: 480px;
-      margin: 0 auto;
-      padding: 24px 16px 80px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 24px 16px 40px;
       gap: 20px;
+      overflow-y: auto;
     }
 
-    /* ── ビューファインダー ── */
+    /* ビューファインダー */
     .viewfinder {
       width: 100%;
-      max-width: 320px;
+      max-width: 300px;
       aspect-ratio: 1;
       border-radius: 20px;
       overflow: hidden;
@@ -40,20 +71,11 @@
       background: #1a1a2e;
       box-shadow: 0 0 40px rgba(92,107,192,0.3);
     }
-    #qr-reader {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
+    #qr-reader { position: absolute; inset: 0; width: 100%; height: 100%; }
     #qr-reader select,
     #qr-reader__header_message,
     #qr-reader__dashboard_section_swaplink { display: none !important; }
-    #qr-reader video {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover;
-    }
+    #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
 
     /* 起動前プレースホルダー */
     #vf-placeholder {
@@ -62,7 +84,7 @@
       align-items: center; justify-content: center;
       gap: 10px; background: #1a1a2e;
     }
-    #vf-placeholder .ph-icon { font-size: 3.5rem; }
+    .ph-icon { font-size: 3.5rem; }
     #vf-placeholder p { font-size: 0.85rem; color: rgba(255,255,255,0.45); }
 
     /* コーナーフレーム */
@@ -70,10 +92,9 @@
       position: absolute; inset: 0; z-index: 10;
       pointer-events: none; display: none;
     }
-    .corner-frame::before, .corner-frame::after,
-    .corner-frame > span::before, .corner-frame > span::after {
-      content: '';
-      position: absolute;
+    .corner-frame::before,.corner-frame::after,
+    .corner-frame > span::before,.corner-frame > span::after {
+      content: ''; position: absolute;
       width: 28px; height: 28px;
       border-color: white; border-style: solid;
     }
@@ -91,7 +112,7 @@
     }
     @keyframes scanMove { 0%,100%{ top:15%; } 50%{ top:80%; } }
 
-    /* ── ステータスバッジ ── */
+    /* ステータス */
     .status-pill {
       display: flex; align-items: center; gap: 8px;
       padding: 10px 22px; border-radius: 999px;
@@ -100,19 +121,16 @@
       border: 1px solid rgba(255,255,255,0.15);
       color: white; background: rgba(255,255,255,0.07);
     }
-    .status-pill.scanning {
-      background: rgba(92,107,192,0.25);
-      border-color: rgba(92,107,192,0.5);
-    }
-    .status-pill.success { background: rgba(46,125,50,0.35); border-color: #66BB6A; }
-    .status-pill.error   { background: rgba(198,40,40,0.3);  border-color: #EF5350; }
+    .status-pill.scanning { background:rgba(92,107,192,0.25); border-color:rgba(92,107,192,0.5); }
+    .status-pill.success  { background:rgba(46,125,50,0.35);  border-color:#66BB6A; }
+    .status-pill.error    { background:rgba(198,40,40,0.3);   border-color:#EF5350; }
     .pulse-dot {
-      width: 8px; height: 8px; border-radius: 50%; background: #7986CB;
+      width:8px; height:8px; border-radius:50%; background:#7986CB;
       animation: pdp 1.2s ease-in-out infinite;
     }
     @keyframes pdp { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-    /* ── スキャンボタン ── */
+    /* 開始ボタン */
     #btn-start {
       background: #5C6BC0; color: white; border: none;
       border-radius: 999px; padding: 15px 0;
@@ -123,145 +141,245 @@
     #btn-start:active { background: #3949AB; transform: scale(0.97); }
 
     .back-link {
-      color: rgba(255,255,255,0.5); font-size: 0.9rem; padding: 8px 16px;
+      color: rgba(255,255,255,0.45); font-size: 0.85rem;
+      text-decoration: none; padding: 8px;
     }
 
-    /* ── キャラクターポップアップ ── */
-    #char-popup {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.88);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      padding: 20px;
+    /* ========================================
+       フェーズ2 : キャラクター画像表示
+       ======================================== */
+    #phase-image {
+      background: #0d0d1a;
+      justify-content: space-between;
+      padding: max(24px, env(safe-area-inset-top)) 0
+               max(24px, env(safe-area-inset-bottom));
     }
-    #char-popup.show { display: flex; }
 
-    .popup-card {
-      background: white;
-      border-radius: 28px;
-      padding: 28px 24px 24px;
-      max-width: 360px;
+    .image-top {
       width: 100%;
       text-align: center;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-      animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      padding: 0 20px;
     }
-    @keyframes popIn {
-      0%   { transform: scale(0.65); opacity: 0; }
-      70%  { transform: scale(1.04); }
-      100% { transform: scale(1);    opacity: 1; }
+    .image-top .stamp-no {
+      font-size: 0.78rem;
+      opacity: 0.5;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
-    .popup-get-badge {
-      display: none;
-      margin: 0 auto 14px;
-      background: linear-gradient(135deg, #FFD700, #FF8C00);
-      color: white;
-      font-size: 0.82rem;
-      font-weight: 900;
-      padding: 5px 18px;
-      border-radius: 999px;
-      letter-spacing: 0.06em;
-      width: fit-content;
-      animation: popIn 0.3s ease;
-    }
-    .popup-get-badge.show { display: block; }
-
-    .popup-img-wrap {
-      width: 170px;
-      height: 170px;
-      margin: 0 auto 14px;
-      border-radius: 50%;
-      overflow: hidden;
-      border: 5px solid #5C6BC0;
-      background: #f0f4ff;
+    .char-img-area {
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 5rem;
+      padding: 16px;
+      width: 100%;
     }
-    .popup-img-wrap img {
-      width: 100%; height: 100%;
+    #char-image {
+      max-width: min(90vw, 400px);
+      max-height: 52vh;
       object-fit: contain;
-      display: block;
+      border-radius: 20px;
+      filter: drop-shadow(0 8px 32px rgba(0,0,0,0.5));
+      animation: charIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes charIn {
+      from { transform: scale(0.7) translateY(30px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
     }
 
-    .popup-name     { font-size: 1.3rem; font-weight: 700; color: #212121; margin-bottom: 4px; }
-    .popup-subtitle { font-size: 0.88rem; color: #757575; margin-bottom: 22px; }
+    .image-bottom {
+      width: 100%;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    #img-char-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    #img-char-sub {
+      font-size: 0.88rem;
+      opacity: 0.7;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    #btn-stamp-get {
+      width: 100%; max-width: 320px;
+      background: #5C6BC0;
+      color: white; border: none;
+      border-radius: 999px;
+      padding: 16px;
+      font-size: 1.05rem; font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(92,107,192,0.5);
+      transition: transform 0.15s, background 0.2s;
+    }
+    #btn-stamp-get:active { transform: scale(0.96); }
 
-    .popup-btn-close {
+    /* ========================================
+       フェーズ3 : 完了画面
+       ======================================== */
+    #phase-complete {
+      background: #f5f5f5;
+      color: #212121;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    /* 紙吹雪 */
+    .confetti-area {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      border-radius: 2px;
+      animation: confetti-fall linear forwards;
+    }
+    @keyframes confetti-fall {
+      0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    .complete-card {
+      position: relative; z-index: 1;
+      background: white;
+      border-radius: 28px;
+      padding: 32px 24px 28px;
+      margin: 20px;
+      max-width: 380px;
+      width: calc(100% - 40px);
+      text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.12);
+      animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes cardIn {
+      from { transform: scale(0.8) translateY(20px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
+    }
+
+    .complete-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #FFD700, #FF8C00);
+      color: white;
+      font-size: 0.85rem; font-weight: 900;
+      padding: 5px 20px; border-radius: 999px;
+      margin-bottom: 16px;
+      letter-spacing: 0.06em;
+    }
+    .complete-badge.already {
+      background: linear-gradient(135deg, #78909C, #546E7A);
+    }
+
+    .complete-char-img {
+      width: 140px; height: 140px;
+      object-fit: contain;
+      margin: 0 auto 12px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+    }
+    .complete-emoji-fallback {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+
+    .complete-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; color: #212121; }
+    .complete-sub  { font-size: 0.88rem; color: #757575; margin-bottom: 20px; }
+
+    .btn-to-list {
       display: block; width: 100%;
       background: #5C6BC0; color: white;
       border: none; border-radius: 999px;
       padding: 14px; font-size: 0.95rem; font-weight: 700;
+      text-align: center; text-decoration: none;
       cursor: pointer; margin-bottom: 10px;
+      box-shadow: 0 4px 12px rgba(92,107,192,0.35);
     }
-    .popup-btn-close:active { background: #3949AB; transform: scale(0.97); }
-
-    .popup-btn-home {
+    .btn-next-scan {
       display: block; width: 100%;
       background: white; color: #5C6BC0;
-      border: 2px solid #5C6BC0;
-      border-radius: 999px;
+      border: 2px solid #5C6BC0; border-radius: 999px;
       padding: 12px; font-size: 0.95rem; font-weight: 700;
-      text-decoration: none; cursor: pointer;
+      text-align: center; cursor: pointer;
     }
-    .popup-btn-home:active { background: #f0f4ff; }
+    .btn-to-list:active  { opacity: 0.85; }
+    .btn-next-scan:active { background: #f0f4ff; }
   </style>
 </head>
 <body>
 
-<header class="scan-header">
-  <h1>&#128247; QRコードスキャン</h1>
-  <p>スタンプのQRコードにカメラを向けてください</p>
-</header>
-
-<main class="scan-main">
-
-  <!-- ビューファインダー -->
-  <div class="viewfinder">
-    <div id="qr-reader"></div>
-    <div id="vf-placeholder">
-      <div class="ph-icon">&#128247;</div>
-      <p>「スキャン開始」を押してください</p>
+<!-- ===== フェーズ1: カメラスキャン ===== -->
+<div id="phase-scan" class="phase">
+  <header class="scan-header">
+    <h1>&#128247; QRコードをスキャン</h1>
+    <p>スタンプのQRコードにカメラを向けてください</p>
+  </header>
+  <div class="scan-body">
+    <div class="viewfinder">
+      <div id="qr-reader"></div>
+      <div id="vf-placeholder">
+        <div class="ph-icon">&#128247;</div>
+        <p>「スキャン開始」を押してください</p>
+      </div>
+      <div class="corner-frame" id="corner-frame"><span></span></div>
+      <div id="scan-line"></div>
     </div>
-    <div class="corner-frame" id="corner-frame"><span></span></div>
-    <div id="scan-line"></div>
+    <div class="status-pill" id="status-pill">QRコードを読み取ります</div>
+    <button id="btn-start" onclick="startScan()">&#128247; スキャン開始</button>
+    <a href="index.html" class="back-link">&#8592; スタンプ帳に戻る</a>
   </div>
+</div>
 
-  <!-- ステータス -->
-  <div class="status-pill" id="status-pill">QRコードを読み取ります</div>
+<!-- ===== フェーズ2: キャラクター画像表示 ===== -->
+<div id="phase-image" class="phase hidden">
+  <div class="image-top">
+    <p class="stamp-no" id="img-stamp-no">STAMP #1</p>
+  </div>
+  <div class="char-img-area">
+    <img id="char-image" src="" alt="" />
+  </div>
+  <div class="image-bottom">
+    <p id="img-char-name"></p>
+    <p id="img-char-sub"></p>
+    <button id="btn-stamp-get" onclick="showCompletePhase()">
+      &#127881; スタンプGET！
+    </button>
+  </div>
+</div>
 
-  <!-- 開始ボタン -->
-  <button id="btn-start" onclick="startScan()">&#128247; スキャン開始</button>
-
-  <a href="index.html" class="back-link">&#8592; スタンプ帳に戻る</a>
-
-</main>
-
-<!-- キャラクターポップアップ -->
-<div id="char-popup">
-  <div class="popup-card">
-    <div class="popup-get-badge" id="popup-get-badge">&#127881; スタンプGET！</div>
-    <div class="popup-img-wrap" id="popup-img-wrap">
-      <span id="popup-img-fallback"></span>
-    </div>
-    <div class="popup-name"     id="popup-name"></div>
-    <div class="popup-subtitle" id="popup-subtitle"></div>
-    <button class="popup-btn-close" id="popup-close">&#10006; 閉じてスキャンを続ける</button>
-    <a href="index.html" class="popup-btn-home">&#127381; スタンプ帳を見る</a>
+<!-- ===== フェーズ3: 完了画面 ===== -->
+<div id="phase-complete" class="phase hidden">
+  <div class="confetti-area" id="confetti-area"></div>
+  <div class="complete-card">
+    <div class="complete-badge" id="complete-badge">&#127881; スタンプGET！</div>
+    <img id="complete-char-img" class="complete-char-img" src="" alt=""
+         onerror="this.style.display='none'; document.getElementById('complete-emoji-fb').style.display='block';" />
+    <span id="complete-emoji-fb" class="complete-emoji-fallback" style="display:none;"></span>
+    <p class="complete-name" id="complete-name"></p>
+    <p class="complete-sub"  id="complete-sub"></p>
+    <a href="index.html" class="btn-to-list">&#127381; スタンプ帳を見る</a>
+    <button class="btn-next-scan" onclick="resetToScan()">&#128247; 次のQRをスキャン</button>
   </div>
 </div>
 
 <script src="js/stamps-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-  let scanner  = null;
-  let active   = false;
-  let lastErrT = 0;
+  let scanner    = null;
+  let active     = false;
+  let lastErrT   = 0;
+  let curStamp   = null;
+  let curIsNew   = false;
 
+  /* ── ステータス表示 ── */
   function setStatus(text, type) {
     const el = document.getElementById('status-pill');
     el.className = 'status-pill' + (type ? ' ' + type : '');
@@ -270,6 +388,7 @@
       : text;
   }
 
+  /* ── スキャン開始 ── */
   function startScan() {
     document.getElementById('btn-start').style.display = 'none';
     setStatus('カメラを起動中...', '');
@@ -277,25 +396,26 @@
     scanner = new Html5Qrcode('qr-reader');
     scanner.start(
       { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1 },
-      onSuccess,
-      () => {}  // QR未検出エラーは無視
+      { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1 },
+      onScanSuccess,
+      () => {}
     ).then(() => {
       active = true;
-      document.getElementById('vf-placeholder').style.display = 'none';
-      document.getElementById('corner-frame').style.display  = 'block';
-      document.getElementById('scan-line').style.display     = 'block';
+      document.getElementById('vf-placeholder').style.display  = 'none';
+      document.getElementById('corner-frame').style.display    = 'block';
+      document.getElementById('scan-line').style.display       = 'block';
       setStatus('スキャン中... QRコードに向けてください', 'scanning');
     }).catch(() => {
       document.getElementById('btn-start').style.display = 'block';
-      setStatus('&#9888;&#65039; カメラを起動できません。アクセスを許可してください', 'error');
+      setStatus('&#9888;&#65039; カメラを起動できません。許可してください', 'error');
     });
   }
 
-  function onSuccess(text) {
+  /* ── QRスキャン成功 ── */
+  function onScanSuccess(text) {
     if (!active) return;
 
-    // スタンプURLからIDを抽出（ar.html / stamp.html 両対応）
+    // ar.html / stamp.html 両対応でIDを抽出
     let stampId = null;
     try {
       const url = new URL(text);
@@ -311,7 +431,7 @@
     if (id >= 1 && id <= 5) {
       active = false;
       scanner.stop().catch(() => {});
-      showCharacterPopup(id);
+      showImagePhase(id);
     } else {
       const now = Date.now();
       if (now - lastErrT > 2500) {
@@ -324,57 +444,120 @@
     }
   }
 
-  function showCharacterPopup(id) {
-    const stamp = STAMPS_CONFIG.find(s => s.id === id);
-    if (!stamp) return;
+  /* ────────────────────────────────────────
+     フェーズ1 → フェーズ2: 画像表示
+  ──────────────────────────────────────── */
+  function showImagePhase(id) {
+    curStamp = STAMPS_CONFIG.find(s => s.id === id);
+    if (!curStamp) return;
 
-    const isNew = collectStamp(id);
+    curIsNew = collectStamp(id);
 
-    // バッジ
-    const badge = document.getElementById('popup-get-badge');
-    if (isNew) badge.classList.add('show');
-    else       badge.classList.remove('show');
+    // 画像をセット（onerrorで絵文字フォールバック）
+    const imgEl = document.getElementById('char-image');
+    imgEl.src = curStamp.image;
+    imgEl.alt = curStamp.name;
+    imgEl.onerror = () => {
+      imgEl.style.display = 'none';
+      // 絵文字を代わりに表示
+      const fb = document.createElement('span');
+      fb.textContent = curStamp.emoji;
+      fb.style.cssText = 'font-size:9rem;display:block;text-align:center;';
+      imgEl.parentNode.appendChild(fb);
+    };
 
-    // 画像
-    const wrap = document.getElementById('popup-img-wrap');
-    wrap.style.borderColor = stamp.color;
-    wrap.style.background  = stamp.color + '18';
-    wrap.innerHTML = '';  // クリア
+    document.getElementById('img-stamp-no').textContent  = `STAMP #${curStamp.id}`;
+    document.getElementById('img-char-name').textContent = curStamp.name;
+    document.getElementById('img-char-sub').textContent  = curStamp.subtitle;
 
-    if (stamp.image) {
-      const img = document.createElement('img');
-      img.src   = stamp.image;
-      img.alt   = stamp.name;
-      img.onerror = () => {
-        wrap.innerHTML = '';
-        const span = document.createElement('span');
-        span.textContent = stamp.emoji;
-        wrap.appendChild(span);
-      };
-      wrap.appendChild(img);
-    } else {
-      const span = document.createElement('span');
-      span.textContent = stamp.emoji;
-      wrap.appendChild(span);
-    }
+    // ボタンをスタンプカラーに
+    document.getElementById('btn-stamp-get').style.background  = curStamp.color;
+    document.getElementById('btn-stamp-get').style.boxShadow   =
+      `0 6px 24px ${curStamp.color}55`;
 
-    document.getElementById('popup-name').textContent     = stamp.name;
-    document.getElementById('popup-subtitle').textContent = stamp.subtitle;
+    // 背景もうっすらスタンプカラー
+    document.getElementById('phase-image').style.background =
+      `linear-gradient(180deg, #0d0d1a 40%, ${curStamp.color}22 100%)`;
 
-    document.getElementById('char-popup').classList.add('show');
+    // フェーズ切替
+    document.getElementById('phase-scan').classList.add('hidden');
+    document.getElementById('phase-image').classList.remove('hidden');
   }
 
-  // 閉じるボタン → ポップアップを閉じてスキャン再開ボタンを表示
-  document.getElementById('popup-close').addEventListener('click', () => {
-    document.getElementById('char-popup').classList.remove('show');
+  /* ────────────────────────────────────────
+     フェーズ2 → フェーズ3: 完了画面
+  ──────────────────────────────────────── */
+  function showCompletePhase() {
+    if (!curStamp) return;
+
+    // 完了カードに情報をセット
+    const badge = document.getElementById('complete-badge');
+    if (curIsNew) {
+      badge.textContent = '🎉 スタンプGET！';
+      badge.classList.remove('already');
+    } else {
+      badge.textContent = '✅ 取得済み';
+      badge.classList.add('already');
+    }
+
+    const cImg = document.getElementById('complete-char-img');
+    cImg.src   = curStamp.image;
+    cImg.alt   = curStamp.name;
+    cImg.style.display = 'block';
+    document.getElementById('complete-emoji-fb').style.display = 'none';
+    document.getElementById('complete-emoji-fb').textContent   = curStamp.emoji;
+
+    document.getElementById('complete-name').textContent = curStamp.name;
+    document.getElementById('complete-sub').textContent  = curStamp.subtitle;
+
+    // 「スタンプ帳を見る」ボタンのカラー
+    document.querySelector('.btn-to-list').style.background = curStamp.color;
+
+    // フェーズ切替
+    document.getElementById('phase-image').classList.add('hidden');
+    document.getElementById('phase-complete').classList.remove('hidden');
+
+    // 新規取得なら紙吹雪
+    if (curIsNew) launchConfetti();
+  }
+
+  /* ────────────────────────────────────────
+     フェーズ3 → フェーズ1: リセット
+  ──────────────────────────────────────── */
+  function resetToScan() {
+    document.getElementById('phase-complete').classList.add('hidden');
+    document.getElementById('phase-scan').classList.remove('hidden');
+    document.getElementById('confetti-area').innerHTML = '';
     document.getElementById('btn-start').style.display = 'block';
-    document.getElementById('vf-placeholder').style.display = 'flex';
-    document.getElementById('corner-frame').style.display   = 'none';
-    document.getElementById('scan-line').style.display      = 'none';
+    // 画像エリアをリセット
+    const imgEl = document.getElementById('char-image');
+    imgEl.style.display = '';
+    imgEl.src = '';
     setStatus('QRコードを読み取ります', '');
     active  = false;
     scanner = null;
-  });
+    curStamp = null;
+  }
+
+  /* ── 紙吹雪 ── */
+  function launchConfetti() {
+    const area   = document.getElementById('confetti-area');
+    const colors = ['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#C9B1FF','#FF7043','#5C6BC0'];
+    area.innerHTML = '';
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left              = Math.random() * 100 + 'vw';
+      p.style.background        = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      p.style.animationDelay    = Math.random() * 0.6 + 's';
+      p.style.width             = (6 + Math.random() * 8) + 'px';
+      p.style.height            = (6 + Math.random() * 8) + 'px';
+      p.style.borderRadius      = Math.random() > 0.5 ? '50%' : '2px';
+      area.appendChild(p);
+    }
+    setTimeout(() => { area.innerHTML = ''; }, 4000);
+  }
 </script>
 </body>
 </html>
