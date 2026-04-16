@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0d0d1a" />
-  <title>QRスキャン - ARスタンプラリー</title>
+  <title>QRスキャン - スタンプラリー</title>
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
@@ -40,14 +40,12 @@
       background: #1a1a2e;
       box-shadow: 0 0 40px rgba(92,107,192,0.3);
     }
-
     #qr-reader {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
     }
-    /* html5-qrcode が注入する余分なUIを非表示 */
     #qr-reader select,
     #qr-reader__header_message,
     #qr-reader__dashboard_section_swaplink { display: none !important; }
@@ -114,7 +112,7 @@
     }
     @keyframes pdp { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-    /* ── ボタン ── */
+    /* ── スキャンボタン ── */
     #btn-start {
       background: #5C6BC0; color: white; border: none;
       border-radius: 999px; padding: 15px 0;
@@ -128,19 +126,89 @@
       color: rgba(255,255,255,0.5); font-size: 0.9rem; padding: 8px 16px;
     }
 
-    /* ── 成功オーバーレイ ── */
-    #success-overlay {
+    /* ── キャラクターポップアップ ── */
+    #char-popup {
       position: fixed; inset: 0;
-      background: rgba(27,94,32,0.94);
-      display: none; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 14px; z-index: 9999;
-      text-align: center; padding: 24px;
+      background: rgba(0,0,0,0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
     }
-    #success-overlay.show { display: flex; }
-    .success-icon  { font-size: 4.5rem; }
-    .success-title { font-size: 1.4rem; font-weight: 700; }
-    .success-sub   { font-size: 0.9rem; opacity: 0.85; }
+    #char-popup.show { display: flex; }
+
+    .popup-card {
+      background: white;
+      border-radius: 28px;
+      padding: 28px 24px 24px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popIn {
+      0%   { transform: scale(0.65); opacity: 0; }
+      70%  { transform: scale(1.04); }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+
+    .popup-get-badge {
+      display: none;
+      margin: 0 auto 14px;
+      background: linear-gradient(135deg, #FFD700, #FF8C00);
+      color: white;
+      font-size: 0.82rem;
+      font-weight: 900;
+      padding: 5px 18px;
+      border-radius: 999px;
+      letter-spacing: 0.06em;
+      width: fit-content;
+      animation: popIn 0.3s ease;
+    }
+    .popup-get-badge.show { display: block; }
+
+    .popup-img-wrap {
+      width: 170px;
+      height: 170px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 5px solid #5C6BC0;
+      background: #f0f4ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+    }
+    .popup-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .popup-name     { font-size: 1.3rem; font-weight: 700; color: #212121; margin-bottom: 4px; }
+    .popup-subtitle { font-size: 0.88rem; color: #757575; margin-bottom: 22px; }
+
+    .popup-btn-close {
+      display: block; width: 100%;
+      background: #5C6BC0; color: white;
+      border: none; border-radius: 999px;
+      padding: 14px; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; margin-bottom: 10px;
+    }
+    .popup-btn-close:active { background: #3949AB; transform: scale(0.97); }
+
+    .popup-btn-home {
+      display: block; width: 100%;
+      background: white; color: #5C6BC0;
+      border: 2px solid #5C6BC0;
+      border-radius: 999px;
+      padding: 12px; font-size: 0.95rem; font-weight: 700;
+      text-decoration: none; cursor: pointer;
+    }
+    .popup-btn-home:active { background: #f0f4ff; }
   </style>
 </head>
 <body>
@@ -173,14 +241,22 @@
 
 </main>
 
-<!-- 成功オーバーレイ -->
-<div id="success-overlay">
-  <div class="success-icon">&#9989;</div>
-  <div class="success-title">QRコード読み取り成功！</div>
-  <div class="success-sub" id="success-sub">スタンプページへ移動します...</div>
+<!-- キャラクターポップアップ -->
+<div id="char-popup">
+  <div class="popup-card">
+    <div class="popup-get-badge" id="popup-get-badge">&#127881; スタンプGET！</div>
+    <div class="popup-img-wrap" id="popup-img-wrap">
+      <span id="popup-img-fallback"></span>
+    </div>
+    <div class="popup-name"     id="popup-name"></div>
+    <div class="popup-subtitle" id="popup-subtitle"></div>
+    <button class="popup-btn-close" id="popup-close">&#10006; 閉じてスキャンを続ける</button>
+    <a href="index.html" class="popup-btn-home">&#127381; スタンプ帳を見る</a>
+  </div>
 </div>
 
 <script src="js/stamps-config.js"></script>
+<script src="js/app.js"></script>
 <script>
   let scanner  = null;
   let active   = false;
@@ -212,7 +288,7 @@
       setStatus('スキャン中... QRコードに向けてください', 'scanning');
     }).catch(() => {
       document.getElementById('btn-start').style.display = 'block';
-      setStatus('⚠️ カメラを起動できません。カメラへのアクセスを許可してください', 'error');
+      setStatus('&#9888;&#65039; カメラを起動できません。アクセスを許可してください', 'error');
     });
   }
 
@@ -233,27 +309,72 @@
 
     const id = Number(stampId);
     if (id >= 1 && id <= 5) {
-      // 有効なスタンプQR ✅
       active = false;
-      const stamp = STAMPS_CONFIG.find(s => s.id === id);
-      document.getElementById('success-sub').textContent =
-        stamp ? `${stamp.emoji} ${stamp.name} のページへ移動します...`
-              : `スタンプ${id} のページへ移動します...`;
-      document.getElementById('success-overlay').classList.add('show');
       scanner.stop().catch(() => {});
-      setTimeout(() => { window.location.href = `ar.html?id=${id}`; }, 900);
+      showCharacterPopup(id);
     } else {
-      // 無効なQR → 警告を出してスキャン継続
       const now = Date.now();
       if (now - lastErrT > 2500) {
         lastErrT = now;
-        setStatus('⚠️ スタンプ用QRコードではありません', 'error');
+        setStatus('&#9888;&#65039; スタンプ用QRコードではありません', 'error');
         setTimeout(() => {
           if (active) setStatus('スキャン中... QRコードに向けてください', 'scanning');
         }, 2500);
       }
     }
   }
+
+  function showCharacterPopup(id) {
+    const stamp = STAMPS_CONFIG.find(s => s.id === id);
+    if (!stamp) return;
+
+    const isNew = collectStamp(id);
+
+    // バッジ
+    const badge = document.getElementById('popup-get-badge');
+    if (isNew) badge.classList.add('show');
+    else       badge.classList.remove('show');
+
+    // 画像
+    const wrap = document.getElementById('popup-img-wrap');
+    wrap.style.borderColor = stamp.color;
+    wrap.style.background  = stamp.color + '18';
+    wrap.innerHTML = '';  // クリア
+
+    if (stamp.image) {
+      const img = document.createElement('img');
+      img.src   = stamp.image;
+      img.alt   = stamp.name;
+      img.onerror = () => {
+        wrap.innerHTML = '';
+        const span = document.createElement('span');
+        span.textContent = stamp.emoji;
+        wrap.appendChild(span);
+      };
+      wrap.appendChild(img);
+    } else {
+      const span = document.createElement('span');
+      span.textContent = stamp.emoji;
+      wrap.appendChild(span);
+    }
+
+    document.getElementById('popup-name').textContent     = stamp.name;
+    document.getElementById('popup-subtitle').textContent = stamp.subtitle;
+
+    document.getElementById('char-popup').classList.add('show');
+  }
+
+  // 閉じるボタン → ポップアップを閉じてスキャン再開ボタンを表示
+  document.getElementById('popup-close').addEventListener('click', () => {
+    document.getElementById('char-popup').classList.remove('show');
+    document.getElementById('btn-start').style.display = 'block';
+    document.getElementById('vf-placeholder').style.display = 'flex';
+    document.getElementById('corner-frame').style.display   = 'none';
+    document.getElementById('scan-line').style.display      = 'none';
+    setStatus('QRコードを読み取ります', '');
+    active  = false;
+    scanner = null;
+  });
 </script>
 </body>
 </html>
