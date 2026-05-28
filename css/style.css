@@ -32,9 +32,28 @@ html {
 body {
   font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
   background: var(--bg);
+  background-image: url('../IMG_1011.jpeg');
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
   color: var(--text);
   line-height: 1.6;
   min-height: 100dvh;
+}
+
+/* 背景写真の上に暗いオーバーレイ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 25, 0.78);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.page-container, .app-header, .bottom-nav {
+  position: relative;
+  z-index: 1;
 }
 
 a {
