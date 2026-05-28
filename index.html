@@ -7,7 +7,7 @@
   <meta name="description" content="ARスタンプラリー - QRコードを読んでキャラクターをARで見よう！" />
   <title>ARスタンプラリー</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
 </head>
 <body>
 
@@ -43,45 +43,11 @@
       </div>
     </section>
 
-    <!-- ===== 開発用テストパネル ===== -->
-    <section id="test-panel" class="test-panel mt-16">
-      <div class="test-panel-header">
-        <span>&#128295; 開発テストパネル</span>
-        <span class="test-badge">DEV</span>
-      </div>
-      <p class="test-panel-desc">
-        仮ボタンでスタンプ取得をシミュレート。<br>実機ではQRコードが代わりになります。
-      </p>
-      <div class="test-stamp-buttons" id="test-stamp-buttons"></div>
-      <button class="btn-reset" onclick="resetAllStamps(); renderStampGrid(); renderTestButtons();">
-        &#128260; 全リセット
-      </button>
-    </section>
-
-    <!-- ===== QRコードセクション ===== -->
-    <section class="test-panel mt-16">
-      <div class="test-panel-header">
-        <span>&#128247; スタンプQRコード</span>
-        <span class="test-badge" style="background:#3949AB;color:white;">QR</span>
-      </div>
-      <p class="test-panel-desc">
-        各スポットに設置するQRコードです。スマホのカメラで読み取るとスタンプがGETできます！<br>
-        <a href="qr-print.html" style="color:#90CAF9;font-weight:700;">&#128438; 5枚まとめて印刷ページへ &rarr;</a>
-      </p>
-      <div id="qr-stamp-1" style="display:flex;justify-content:center;background:white;padding:16px;border-radius:12px;margin-bottom:4px;"></div>
-      <p style="text-align:center;font-size:0.72rem;color:#a0aec0;margin-bottom:6px;">&#129408; スタンプ1：サメのスポット（サンプル）</p>
-      <p style="text-align:center;font-size:0.65rem;color:#4a5568;word-break:break-all;margin-bottom:12px;" id="qr-url-label"></p>
-      <p style="text-align:center;font-size:0.82rem;color:#a0aec0;">スタンプ2〜5のQRは
-        <a href="qr-print.html" style="color:#90CAF9;font-weight:700;">印刷ページ</a>
-        でまとめて確認できます。
-      </p>
-    </section>
-
     <!-- 使い方ガイド -->
     <section class="marker-guide mt-16">
       <p>各スポットにあるQRコードをスキャンしてスタンプをゲット！</p>
       <p style="font-size:0.8rem;margin-top:8px;color:var(--text-sub);">
-        スタンプ取得後は「ARで見る」ボタンでキャラクターが登場！
+        5つ全部集めてコンプリートを目指そう！
       </p>
     </section>
 
@@ -104,83 +70,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       renderStampGrid();
-      renderTestButtons();
-
-      // スタンプ1のQRコード生成
-      const stampUrl = 'https://pikaichi0407-a11y.github.io/pikaichi.APP/ar.html?id=1';
-      new QRCode(document.getElementById('qr-stamp-1'), {
-        text: stampUrl,
-        width: 200,
-        height: 200,
-        colorDark: '#1565C0',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M,
-      });
-      document.getElementById('qr-url-label').textContent = stampUrl;
     });
-
-    // テスト用ボタンを生成
-    function renderTestButtons() {
-      const container = document.getElementById('test-stamp-buttons');
-      if (!container) return;
-      const collected = getCollectedStamps();
-      container.innerHTML = STAMPS_CONFIG.map((stamp) => {
-        const done = collected.includes(stamp.id);
-        return `
-          <button
-            class="test-stamp-btn ${done ? 'done' : ''}"
-            style="--stamp-color: ${stamp.color}"
-            onclick="simulateStamp(${stamp.id})"
-          >
-            <span class="test-btn-emoji">${done ? '✅' : stamp.emoji}</span>
-            <span class="test-btn-label">${stamp.name}</span>
-            <span class="test-btn-state">${done ? '取得済み' : 'タップで取得'}</span>
-          </button>
-        `;
-      }).join('');
-    }
-
-    // スタンプ取得シミュレート
-    function simulateStamp(id) {
-      const isNew = collectStamp(id);
-      renderStampGrid();
-      renderTestButtons();
-      if (isNew) {
-        const stamp = getStampById(id);
-        showToast(`${stamp.emoji} ${stamp.name} を取得しました！`);
-        if (isComplete()) {
-          setTimeout(() => showToast('🎉 全スタンプコンプリート！'), 800);
-        }
-      } else {
-        showToast('このスタンプはすでに取得済みです');
-      }
-    }
-
-    // トースト通知
-    function showToast(msg) {
-      const existing = document.getElementById('toast');
-      if (existing) existing.remove();
-      const toast = document.createElement('div');
-      toast.id = 'toast';
-      toast.textContent = msg;
-      toast.style.cssText = `
-        position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
-        background:rgba(0,0,0,0.82); color:white; padding:10px 20px;
-        border-radius:999px; font-size:0.9rem; z-index:9999; white-space:nowrap;
-        opacity:0; transition:all 0.25s ease; pointer-events:none;
-        max-width:90vw; text-overflow:ellipsis; overflow:hidden;
-      `;
-      document.body.appendChild(toast);
-      requestAnimationFrame(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateX(-50%) translateY(0)';
-      });
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(-50%) translateY(20px)';
-        setTimeout(() => toast.remove(), 300);
-      }, 2500);
-    }
   </script>
 </body>
 </html>
