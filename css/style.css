@@ -11,16 +11,16 @@
 }
 
 :root {
-  --primary: #5C6BC0;
-  --primary-dark: #3949AB;
-  --accent: #FF7043;
-  --bg: #F5F5F5;
-  --surface: #FFFFFF;
-  --text: #212121;
-  --text-sub: #757575;
-  --border: #E0E0E0;
+  --primary: #9333EA;
+  --primary-dark: #7C3AED;
+  --accent: #D97706;
+  --bg: #0d0b1e;
+  --surface: #17152e;
+  --text: #EDE9FE;
+  --text-sub: #8B7FB3;
+  --border: #2D2560;
   --radius: 16px;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   --transition: 0.25s ease;
 }
 
@@ -51,26 +51,33 @@ a {
 
 /* ---------- ヘッダー ---------- */
 .app-header {
-  background: var(--primary);
+  background: linear-gradient(135deg, #150d30 0%, #2a0d4f 50%, #150d30 100%);
   color: white;
   padding: 16px;
   text-align: center;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.6);
+  border-bottom: 2px solid #D97706;
 }
 
 .app-header h1 {
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: 0.05em;
+  background: linear-gradient(90deg, #F5D78E, #FBBF24, #F5D78E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .app-header .subtitle {
   font-size: 0.8rem;
-  opacity: 0.85;
+  opacity: 0.65;
   margin-top: 2px;
+  color: #c4b5fd;
+  -webkit-text-fill-color: #c4b5fd;
 }
 
 /* ---------- 進捗バー ---------- */
@@ -104,11 +111,12 @@ a {
 }
 
 .progress-fill {
-  background: linear-gradient(90deg, var(--primary), var(--accent));
+  background: linear-gradient(90deg, #7C3AED, #D97706, #F59E0B);
   height: 100%;
   border-radius: 999px;
   width: 0%;
   transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px rgba(217,119,6,0.5);
 }
 
 /* ---------- スタンプグリッド ---------- */
@@ -132,12 +140,13 @@ a {
 }
 
 .stamp-card.collected {
-  border-left: 5px solid var(--primary);
+  border-left: 5px solid var(--accent);
+  background: linear-gradient(90deg, #1e0d3a 0%, var(--surface) 60%);
 }
 
 .stamp-card.locked {
-  opacity: 0.65;
-  filter: grayscale(0.5);
+  opacity: 0.55;
+  filter: grayscale(0.6);
 }
 
 .stamp-card:active {
@@ -560,11 +569,11 @@ a {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--surface);
+  background: #100e24;
   display: flex;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #D97706;
   z-index: 200;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.6);
 }
 
 .bottom-nav a {
