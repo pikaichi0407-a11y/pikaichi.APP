@@ -1,7 +1,9 @@
 /* =============================================
-   ARスタンプラリー - グローバルスタイル
+   とちぎ蚤の市スタンプラリー - グローバルスタイル
    モバイルファースト設計（スマホ縦持ち基準）
    ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;700;800&display=swap');
 
 /* ---------- リセット & ベース ---------- */
 *, *::before, *::after {
@@ -30,11 +32,12 @@ html {
 }
 
 body {
-  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+  font-family: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', '游明朝', serif;
   background-color: var(--bg);
   color: var(--text);
-  line-height: 1.6;
+  line-height: 1.7;
   min-height: 100dvh;
+  letter-spacing: 0.03em;
 }
 
 .page-container, .app-header, .bottom-nav {
@@ -68,13 +71,14 @@ a {
 }
 
 .app-header h1 {
-  font-size: 1.2rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   background: linear-gradient(90deg, #F5D78E, #FBBF24, #F5D78E);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-family: 'Shippori Mincho B1', serif;
 }
 
 .app-header .subtitle {
