@@ -15,14 +15,17 @@
 
 ## 使い方（1台だけ／ネット接続あり）
 
+`setup.bat` はコマンドプロンプトだけで動く単一ファイルです（PowerShellスクリプトへの依存なし）。
+
 1. `setup.bat` をダブルクリックして実行します。
    - `winget` (アプリ インストーラー) が必要です。Windows 10/11 には標準で入っていますが、古い場合は
      [Microsoft Store からアプリ インストーラーを更新](https://apps.microsoft.com/detail/9nblggh4nns1) してください。
-2. 画面の指示に従って進めます。
-   - Git の名前・メールアドレスの入力を求められます（初回のみ）。
-   - GitHub へのログインはブラウザが開くので、画面の指示に従ってください。
-3. 完了後、PCを再起動するか新しいターミナルを開いてください（PATHの反映のため）。
-4. 新しいターミナルで `claude` と入力し、Claude Code にログインしてください。
+2. Git / GitHub CLI / Python / Node.js / Claude Desktop / Claude Code CLI が自動でインストールされます。
+3. 完了後、以下はネット接続が必要なため別途行ってください。
+   - PCを再起動（インストールしたツールを使えるようにするため）
+   - `git config --global user.name` / `user.email` の設定
+   - `gh auth login` でGitHubにログイン
+   - `claude` でClaude Codeにログイン
 
 ## 使い方（複数台・USBメモリで配布・完全オフライン対応）
 
