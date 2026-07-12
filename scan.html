@@ -17,9 +17,6 @@
       overflow: hidden;
     }
 
-    /* ========================================
-       共通：各フェーズのページ全体コンテナ
-       ======================================== */
     .phase {
       position: fixed;
       inset: 0;
@@ -29,9 +26,6 @@
     }
     .phase.hidden { display: none; }
 
-    /* ========================================
-       フェーズ1 : カメラスキャン
-       ======================================== */
     #phase-scan {
       background: #0d0d1a;
       justify-content: flex-start;
@@ -60,7 +54,6 @@
       overflow-y: auto;
     }
 
-    /* ビューファインダー */
     .viewfinder {
       width: 100%;
       max-width: 300px;
@@ -77,7 +70,6 @@
     #qr-reader__dashboard_section_swaplink { display: none !important; }
     #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
 
-    /* 起動前プレースホルダー */
     #vf-placeholder {
       position: absolute; inset: 0; z-index: 5;
       display: flex; flex-direction: column;
@@ -87,7 +79,6 @@
     .ph-icon { font-size: 3.5rem; }
     #vf-placeholder p { font-size: 0.85rem; color: rgba(255,255,255,0.45); }
 
-    /* コーナーフレーム */
     .corner-frame {
       position: absolute; inset: 0; z-index: 10;
       pointer-events: none; display: none;
@@ -103,7 +94,6 @@
     .corner-frame > span::before { bottom:12px; left:12px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
     .corner-frame > span::after  { bottom:12px; right:12px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
 
-    /* スキャンライン */
     #scan-line {
       position: absolute; left:20px; right:20px; height:2px;
       background: linear-gradient(90deg, transparent, #5C6BC0, white, #5C6BC0, transparent);
@@ -112,7 +102,6 @@
     }
     @keyframes scanMove { 0%,100%{ top:15%; } 50%{ top:80%; } }
 
-    /* ステータス */
     .status-pill {
       display: flex; align-items: center; gap: 8px;
       padding: 10px 22px; border-radius: 999px;
@@ -130,7 +119,6 @@
     }
     @keyframes pdp { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-    /* 開始ボタン */
     #btn-start {
       background: #5C6BC0; color: white; border: none;
       border-radius: 999px; padding: 15px 0;
@@ -145,9 +133,6 @@
       text-decoration: none; padding: 8px;
     }
 
-    /* ========================================
-       フェーズ2 : キャラクター画像表示
-       ======================================== */
     #phase-image {
       background: #0d0d1a;
       justify-content: space-between;
@@ -175,7 +160,6 @@
       padding: 16px;
       width: 100%;
     }
-    /* 画像＋吹き出しを一緒に包む相対位置コンテナ */
     .char-img-wrap {
       position: relative;
       display: inline-flex;
@@ -196,7 +180,6 @@
       to   { transform: scale(1)   translateY(0);    opacity: 1; }
     }
 
-    /* 画像なし時の絵文字フォールバック */
     #char-emoji-fallback {
       font-size: 8rem;
       line-height: 1.2;
@@ -205,7 +188,6 @@
       animation: charIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    /* 吹き出しセリフ：画像の下部中央に重なる */
     .speech-bubble {
       position: absolute;
       bottom: 14px;
@@ -264,9 +246,6 @@
     }
     #btn-stamp-get:active { transform: scale(0.96); }
 
-    /* ========================================
-       フェーズ3 : 完了画面
-       ======================================== */
     #phase-complete {
       background: #f5f5f5;
       color: #212121;
@@ -274,7 +253,6 @@
       overflow-y: auto;
     }
 
-    /* 紙吹雪 */
     .confetti-area {
       position: fixed; inset: 0;
       pointer-events: none; z-index: 0;
@@ -359,7 +337,6 @@
 </head>
 <body>
 
-<!-- ===== フェーズ1: カメラスキャン ===== -->
 <div id="phase-scan" class="phase">
   <header class="scan-header">
     <h1>&#128247; QRコードをスキャン</h1>
@@ -377,18 +354,15 @@
     </div>
     <div class="status-pill" id="status-pill">QRコードを読み取ります</div>
     <button id="btn-start" onclick="startScan()">&#128247; スキャン開始</button>
-
     <a href="index.html" class="back-link">&#8592; スタンプ帳に戻る</a>
   </div>
 </div>
 
-<!-- ===== フェーズ2: キャラクター画像表示 ===== -->
 <div id="phase-image" class="phase hidden">
   <div class="image-top">
     <p class="stamp-no" id="img-stamp-no">STAMP #1</p>
   </div>
   <div class="char-img-area">
-    <!-- 画像＋吹き出しをまとめて包む（吹き出しを画像下部に重ねるため） -->
     <div class="char-img-wrap">
       <img id="char-image" src="" alt="" />
       <span id="char-emoji-fallback"></span>
@@ -406,7 +380,6 @@
   </div>
 </div>
 
-<!-- ===== フェーズ3: 完了画面 ===== -->
 <div id="phase-complete" class="phase hidden">
   <div class="confetti-area" id="confetti-area"></div>
   <div class="complete-card">
@@ -424,13 +397,12 @@
 <script src="js/stamps-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-  let scanner    = null;
-  let active     = false;
-  let lastErrT   = 0;
-  let curStamp   = null;
-  let curIsNew   = false;
+  let scanner  = null;
+  let active   = false;
+  let lastErrT = 0;
+  let curStamp = null;
+  let curIsNew = false;
 
-  /* ── ステータス表示 ── */
   function setStatus(text, type) {
     const el = document.getElementById('status-pill');
     el.className = 'status-pill' + (type ? ' ' + type : '');
@@ -439,11 +411,9 @@
       : text;
   }
 
-  /* ── スキャン開始 ── */
   function startScan() {
     document.getElementById('btn-start').style.display = 'none';
     setStatus('カメラを起動中...', '');
-
     scanner = new Html5Qrcode('qr-reader');
     scanner.start(
       { facingMode: 'environment' },
@@ -452,9 +422,9 @@
       () => {}
     ).then(() => {
       active = true;
-      document.getElementById('vf-placeholder').style.display  = 'none';
-      document.getElementById('corner-frame').style.display    = 'block';
-      document.getElementById('scan-line').style.display       = 'block';
+      document.getElementById('vf-placeholder').style.display = 'none';
+      document.getElementById('corner-frame').style.display   = 'block';
+      document.getElementById('scan-line').style.display      = 'block';
       setStatus('スキャン中... QRコードに向けてください', 'scanning');
     }).catch(() => {
       document.getElementById('btn-start').style.display = 'block';
@@ -462,11 +432,8 @@
     });
   }
 
-  /* ── QRスキャン成功 ── */
   function onScanSuccess(text) {
     if (!active) return;
-
-    // ar.html / stamp.html 両対応でIDを抽出
     let stampId = null;
     try {
       const url = new URL(text);
@@ -477,7 +444,6 @@
       const m = text.match(/(?:ar|stamp)\.html\?(?:.*&)?id=(\d+)/);
       if (m) stampId = m[1];
     }
-
     const id = Number(stampId);
     if (id >= 1 && id <= 5) {
       active = false;
@@ -495,65 +461,47 @@
     }
   }
 
-  /* ────────────────────────────────────────
-     フェーズ1 → フェーズ2: 画像表示
-  ──────────────────────────────────────── */
   function showImagePhase(id) {
     curStamp = STAMPS_CONFIG.find(s => s.id === id);
     if (!curStamp) return;
-
     curIsNew = collectStamp(id);
 
-    // 吹き出しセリフをセット
     const bubble = document.getElementById('speech-bubble');
     bubble.classList.add('hidden');
-    void bubble.offsetWidth; // アニメーションをリセット
+    void bubble.offsetWidth;
     if (curStamp.speech) {
       document.getElementById('speech-text').textContent = '「' + curStamp.speech + '」';
       bubble.classList.remove('hidden');
     }
 
-    // 画像・絵文字フォールバックをリセット
     const emojiEl = document.getElementById('char-emoji-fallback');
     emojiEl.style.display = 'none';
     emojiEl.textContent   = '';
 
-    // 画像をセット（読み込み失敗時は絵文字フォールバック）
     const imgEl = document.getElementById('char-image');
     imgEl.style.display = '';
     imgEl.src = curStamp.image;
     imgEl.alt = curStamp.name;
     imgEl.onerror = () => {
-      imgEl.style.display  = 'none';
-      emojiEl.textContent  = curStamp.emoji;
+      imgEl.style.display   = 'none';
+      emojiEl.textContent   = curStamp.emoji;
       emojiEl.style.display = 'block';
     };
 
     document.getElementById('img-stamp-no').textContent  = `STAMP #${curStamp.id}`;
     document.getElementById('img-char-name').textContent = curStamp.name;
     document.getElementById('img-char-sub').textContent  = curStamp.subtitle;
-
-    // ボタンをスタンプカラーに
-    document.getElementById('btn-stamp-get').style.background  = curStamp.color;
-    document.getElementById('btn-stamp-get').style.boxShadow   =
-      `0 6px 24px ${curStamp.color}55`;
-
-    // 背景もうっすらスタンプカラー
-    document.getElementById('phase-image').style.background =
+    document.getElementById('btn-stamp-get').style.background = curStamp.color;
+    document.getElementById('btn-stamp-get').style.boxShadow  = `0 6px 24px ${curStamp.color}55`;
+    document.getElementById('phase-image').style.background   =
       `linear-gradient(180deg, #0d0d1a 40%, ${curStamp.color}22 100%)`;
 
-    // フェーズ切替
     document.getElementById('phase-scan').classList.add('hidden');
     document.getElementById('phase-image').classList.remove('hidden');
   }
 
-  /* ────────────────────────────────────────
-     フェーズ2 → フェーズ3: 完了画面
-  ──────────────────────────────────────── */
   function showCompletePhase() {
     if (!curStamp) return;
-
-    // 完了カードに情報をセット
     const badge = document.getElementById('complete-badge');
     if (curIsNew) {
       badge.textContent = '🎉 スタンプGET！';
@@ -562,37 +510,25 @@
       badge.textContent = '✅ 取得済み';
       badge.classList.add('already');
     }
-
     const cImg = document.getElementById('complete-char-img');
     cImg.src   = curStamp.image;
     cImg.alt   = curStamp.name;
     cImg.style.display = 'block';
     document.getElementById('complete-emoji-fb').style.display = 'none';
     document.getElementById('complete-emoji-fb').textContent   = curStamp.emoji;
-
     document.getElementById('complete-name').textContent = curStamp.name;
     document.getElementById('complete-sub').textContent  = curStamp.subtitle;
-
-    // 「スタンプ帳を見る」ボタンのカラー
     document.querySelector('.btn-to-list').style.background = curStamp.color;
-
-    // フェーズ切替
     document.getElementById('phase-image').classList.add('hidden');
     document.getElementById('phase-complete').classList.remove('hidden');
-
-    // 新規取得なら紙吹雪
     if (curIsNew) launchConfetti();
   }
 
-  /* ────────────────────────────────────────
-     フェーズ3 → フェーズ1: リセット
-  ──────────────────────────────────────── */
   function resetToScan() {
     document.getElementById('phase-complete').classList.add('hidden');
     document.getElementById('phase-scan').classList.remove('hidden');
     document.getElementById('confetti-area').innerHTML = '';
     document.getElementById('btn-start').style.display = 'block';
-    // 画像・絵文字エリアをリセット
     const imgEl = document.getElementById('char-image');
     imgEl.style.display = '';
     imgEl.src = '';
@@ -600,12 +536,11 @@
     emjEl.style.display = 'none';
     emjEl.textContent   = '';
     setStatus('QRコードを読み取ります', '');
-    active  = false;
-    scanner = null;
+    active   = false;
+    scanner  = null;
     curStamp = null;
   }
 
-  /* ── 紙吹雪 ── */
   function launchConfetti() {
     const area   = document.getElementById('confetti-area');
     const colors = ['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#C9B1FF','#FF7043','#5C6BC0'];
