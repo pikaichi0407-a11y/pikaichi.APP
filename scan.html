@@ -196,6 +196,15 @@
       to   { transform: scale(1)   translateY(0);    opacity: 1; }
     }
 
+    /* 画像なし時の絵文字フォールバック */
+    #char-emoji-fallback {
+      font-size: 8rem;
+      line-height: 1.2;
+      display: none;
+      filter: drop-shadow(0 8px 32px rgba(0,0,0,0.5));
+      animation: charIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
     /* 吹き出しセリフ：画像の下部中央に重なる */
     .speech-bubble {
       position: absolute;
@@ -382,16 +391,10 @@
     <!-- 画像＋吹き出しをまとめて包む（吹き出しを画像下部に重ねるため） -->
     <div class="char-img-wrap">
       <img id="char-image" src="" alt="" />
+      <span id="char-emoji-fallback"></span>
       <div class="speech-bubble hidden" id="speech-bubble">
         <p id="speech-text"></p>
       </div>
-    </div>
-    <!-- 画像読み込み失敗時のエラー表示 -->
-    <div id="img-error-info" style="display:none;text-align:center;padding:16px;">
-      <p style="font-size:3rem;">&#128027;</p>
-      <p style="font-size:0.8rem;opacity:0.7;margin-top:8px;">画像を読み込めませんでした</p>
-      <p id="img-error-url" style="font-size:0.65rem;opacity:0.5;word-break:break-all;margin-top:4px;background:rgba(255,255,255,0.08);padding:6px 10px;border-radius:8px;"></p>
-      <p style="font-size:0.72rem;opacity:0.6;margin-top:8px;">↑ このURLをブラウザで開いて画像が表示されるか確認してください</p>
     </div>
   </div>
   <div class="image-bottom">
@@ -510,23 +513,20 @@
       bubble.classList.remove('hidden');
     }
 
-    // 画像エラー表示をリセット
-    document.getElementById('img-error-info').style.display = 'none';
+    // 画像・絵文字フォールバックをリセット
+    const emojiEl = document.getElementById('char-emoji-fallback');
+    emojiEl.style.display = 'none';
+    emojiEl.textContent   = '';
 
-    // 画像をセット（onerror でエラーURL表示）
+    // 画像をセット（読み込み失敗時は絵文字フォールバック）
     const imgEl = document.getElementById('char-image');
     imgEl.style.display = '';
     imgEl.src = curStamp.image;
     imgEl.alt = curStamp.name;
     imgEl.onerror = () => {
-      imgEl.style.display = 'none';
-      // 試みたURLを表示してデバッグしやすくする
-      const errInfo = document.getElementById('img-error-info');
-      const errUrl  = document.getElementById('img-error-url');
-      // 絶対URLを表示
-      const absUrl = new URL(curStamp.image, location.href).href.split('?')[0];
-      errUrl.textContent = absUrl;
-      errInfo.style.display = 'block';
+      imgEl.style.display  = 'none';
+      emojiEl.textContent  = curStamp.emoji;
+      emojiEl.style.display = 'block';
     };
 
     document.getElementById('img-stamp-no').textContent  = `STAMP #${curStamp.id}`;
@@ -592,10 +592,13 @@
     document.getElementById('phase-scan').classList.remove('hidden');
     document.getElementById('confetti-area').innerHTML = '';
     document.getElementById('btn-start').style.display = 'block';
-    // 画像エリアをリセット
+    // 画像・絵文字エリアをリセット
     const imgEl = document.getElementById('char-image');
     imgEl.style.display = '';
     imgEl.src = '';
+    const emjEl = document.getElementById('char-emoji-fallback');
+    emjEl.style.display = 'none';
+    emjEl.textContent   = '';
     setStatus('QRコードを読み取ります', '');
     active  = false;
     scanner = null;
