@@ -541,6 +541,19 @@
     curStamp = null;
   }
 
+  /* ────────────────────────────────────────
+     QRコードから直接開かれた場合（?id=X）
+     スマホの標準カメラでQRを読むとここに来る。
+     カメラ画面を飛ばして、いきなりキャラクター表示へ。
+  ──────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', () => {
+    const raw = new URLSearchParams(location.search).get('id');
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isInteger(id) || id < 1 || id > 5) return;
+    showImagePhase(id);
+  });
+
   function launchConfetti() {
     const area   = document.getElementById('confetti-area');
     const colors = ['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#C9B1FF','#FF7043','#5C6BC0'];

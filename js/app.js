@@ -1,5 +1,5 @@
 /**
- * ARスタンプラリー - コアロジック
+ * 十千木 百鬼夜行スタンプラリー - コアロジック
  * スタンプの取得・保存・読み込みを管理する。
  * localStorage キー: 'stamp-rally-stamps'（取得済みスタンプIDの配列を JSON 文字列で保存）
  */
@@ -159,7 +159,8 @@ function handleStampCollection() {
     }
   }
 
-  if (arBtn) arBtn.href = `ar.html?id=${stamp.id}`;
+  // 3Dモデル(.glb)が未配置のため、AR ページではなくキャラクター表示ページへ
+  if (arBtn) arBtn.href = `scan.html?id=${stamp.id}`;
 
   const isNew    = collectStamp(id);
   const statusEl = document.getElementById('stamp-status');
