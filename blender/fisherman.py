@@ -20,15 +20,33 @@
 
 import bpy
 import math
-from mathutils import Vector
+import os
+import sys
 
 # ----------------------------------------------------------------------
 # 設定
 # ----------------------------------------------------------------------
 # .glb の書き出し先（このリポジトリの assets/models/ を想定）。
-# 例: "/Users/you/pikaichi.APP/assets/models/character1.glb"
+# 例: "C:/Users/you/pikaichi.APP/assets/models/character1.glb"
 # 空にすると書き出しをスキップします。
+#
+# コマンドラインから上書きも可能:
+#   blender --python fisherman.py -- --out C:\path\character1.glb
 EXPORT_PATH = "//character1.glb"  # //=.blend と同じ場所。適宜フルパスに変更可
+
+
+def resolve_export_path():
+    """`--` 以降の --out 引数があればそれを優先して使う"""
+    argv = sys.argv
+    if "--" in argv:
+        extra = argv[argv.index("--") + 1:]
+        if "--out" in extra:
+            idx = extra.index("--out") + 1
+            if idx < len(extra):
+                path = os.path.abspath(extra[idx])
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                return path
+    return EXPORT_PATH
 
 # ----------------------------------------------------------------------
 # ユーティリティ
@@ -254,7 +272,7 @@ def main():
     build_rod(m)
     character = join_all("character")
     add_lighting()
-    export_glb(EXPORT_PATH, character)
+    export_glb(resolve_export_path(), character)
     print("🎣 釣り人モデル生成完了！")
 
 
