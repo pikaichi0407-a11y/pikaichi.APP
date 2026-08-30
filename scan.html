@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0d1a" />
+  <title>QRスキャン - スタンプラリー</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+      background: #0d0d1a;
+      color: white;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .phase {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .phase.hidden { display: none; }
+
+    #phase-scan {
+      background: #0d0d1a;
+      justify-content: flex-start;
+    }
+
+    .scan-header {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .scan-header h1 { font-size: 1.1rem; font-weight: 700; }
+    .scan-header p  { font-size: 0.8rem; opacity: 0.6; margin-top: 4px; }
+
+    .scan-body {
+      flex: 1;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .viewfinder {
+      width: 100%;
+      max-width: 300px;
+      aspect-ratio: 1;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: #1a1a2e;
+      box-shadow: 0 0 40px rgba(92,107,192,0.3);
+    }
+    #qr-reader { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #qr-reader select,
+    #qr-reader__header_message,
+    #qr-reader__dashboard_section_swaplink { display: none !important; }
+    #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+
+    #vf-placeholder {
+      position: absolute; inset: 0; z-index: 5;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; background: #1a1a2e;
+    }
+    .ph-icon { font-size: 3.5rem; }
+    #vf-placeholder p { font-size: 0.85rem; color: rgba(255,255,255,0.45); }
+
+    .corner-frame {
+      position: absolute; inset: 0; z-index: 10;
+      pointer-events: none; display: none;
+    }
+    .corner-frame::before,.corner-frame::after,
+    .corner-frame > span::before,.corner-frame > span::after {
+      content: ''; position: absolute;
+      width: 28px; height: 28px;
+      border-color: white; border-style: solid;
+    }
+    .corner-frame::before  { top:12px; left:12px;  border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+    .corner-frame::after   { top:12px; right:12px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+    .corner-frame > span::before { bottom:12px; left:12px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+    .corner-frame > span::after  { bottom:12px; right:12px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+    #scan-line {
+      position: absolute; left:20px; right:20px; height:2px;
+      background: linear-gradient(90deg, transparent, #5C6BC0, white, #5C6BC0, transparent);
+      animation: scanMove 2s ease-in-out infinite;
+      z-index: 11; display: none;
+    }
+    @keyframes scanMove { 0%,100%{ top:15%; } 50%{ top:80%; } }
+
+    .status-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 999px;
+      font-size: 0.88rem; font-weight: 700;
+      min-width: 240px; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white; background: rgba(255,255,255,0.07);
+    }
+    .status-pill.scanning { background:rgba(92,107,192,0.25); border-color:rgba(92,107,192,0.5); }
+    .status-pill.success  { background:rgba(46,125,50,0.35);  border-color:#66BB6A; }
+    .status-pill.error    { background:rgba(198,40,40,0.3);   border-color:#EF5350; }
+    .pulse-dot {
+      width:8px; height:8px; border-radius:50%; background:#7986CB;
+      animation: pdp 1.2s ease-in-out infinite;
+    }
+    @keyframes pdp { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    #btn-start {
+      background: #5C6BC0; color: white; border: none;
+      border-radius: 999px; padding: 15px 0;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      width: 100%; max-width: 280px;
+      box-shadow: 0 4px 20px rgba(92,107,192,0.5);
+    }
+    #btn-start:active { background: #3949AB; transform: scale(0.97); }
+
+    .back-link {
+      color: rgba(255,255,255,0.45); font-size: 0.85rem;
+      text-decoration: none; padding: 8px;
+    }
+
+    #phase-image {
+      background: #0d0d1a;
+      justify-content: space-between;
+      padding: max(24px, env(safe-area-inset-top)) 0
+               max(24px, env(safe-area-inset-bottom));
+    }
+
+    .image-top {
+      width: 100%;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .image-top .stamp-no {
+      font-size: 0.78rem;
+      opacity: 0.5;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .char-img-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      width: 100%;
+    }
+    .char-img-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #char-image {
+      max-width: min(90vw, 400px);
+      max-height: 52vh;
+      object-fit: contain;
+      border-radius: 20px;
+      filter: drop-shadow(0 8px 32px rgba(0,0,0,0.5));
+      animation: charIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: block;
+    }
+    @keyframes charIn {
+      from { transform: scale(0.7) translateY(30px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
+    }
+
+    #char-emoji-fallback {
+      font-size: 8rem;
+      line-height: 1.2;
+      display: none;
+      filter: drop-shadow(0 8px 32px rgba(0,0,0,0.5));
+      animation: charIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .speech-bubble {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 10, 24, 0.78);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 999px;
+      padding: 8px 22px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-align: center;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      animation: bubbleIn 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+    }
+    .speech-bubble.hidden { display: none; }
+    @keyframes bubbleIn {
+      from { transform: translateX(-50%) scale(0.8) translateY(6px); opacity: 0; }
+      to   { transform: translateX(-50%) scale(1)   translateY(0);   opacity: 1; }
+    }
+
+    .image-bottom {
+      width: 100%;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    #img-char-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    #img-char-sub {
+      font-size: 0.88rem;
+      opacity: 0.7;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    #btn-stamp-get {
+      width: 100%; max-width: 320px;
+      background: #5C6BC0;
+      color: white; border: none;
+      border-radius: 999px;
+      padding: 16px;
+      font-size: 1.05rem; font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(92,107,192,0.5);
+      transition: transform 0.15s, background 0.2s;
+    }
+    #btn-stamp-get:active { transform: scale(0.96); }
+
+    #phase-complete {
+      background: #f5f5f5;
+      color: #212121;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .confetti-area {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      border-radius: 2px;
+      animation: confetti-fall linear forwards;
+    }
+    @keyframes confetti-fall {
+      0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    .complete-card {
+      position: relative; z-index: 1;
+      background: white;
+      border-radius: 28px;
+      padding: 32px 24px 28px;
+      margin: 20px;
+      max-width: 380px;
+      width: calc(100% - 40px);
+      text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.12);
+      animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes cardIn {
+      from { transform: scale(0.8) translateY(20px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
+    }
+
+    .complete-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #FFD700, #FF8C00);
+      color: white;
+      font-size: 0.85rem; font-weight: 900;
+      padding: 5px 20px; border-radius: 999px;
+      margin-bottom: 16px;
+      letter-spacing: 0.06em;
+    }
+    .complete-badge.already {
+      background: linear-gradient(135deg, #78909C, #546E7A);
+    }
+
+    .complete-char-img {
+      width: 140px; height: 140px;
+      object-fit: contain;
+      margin: 0 auto 12px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+    }
+    .complete-emoji-fallback {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+
+    .complete-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; color: #212121; }
+    .complete-sub  { font-size: 0.88rem; color: #757575; margin-bottom: 20px; }
+
+    .btn-to-list {
+      display: block; width: 100%;
+      background: #5C6BC0; color: white;
+      border: none; border-radius: 999px;
+      padding: 14px; font-size: 0.95rem; font-weight: 700;
+      text-align: center; text-decoration: none;
+      cursor: pointer; margin-bottom: 10px;
+      box-shadow: 0 4px 12px rgba(92,107,192,0.35);
+    }
+    .btn-next-scan {
+      display: block; width: 100%;
+      background: white; color: #5C6BC0;
+      border: 2px solid #5C6BC0; border-radius: 999px;
+      padding: 12px; font-size: 0.95rem; font-weight: 700;
+      text-align: center; cursor: pointer;
+    }
+    .btn-to-list:active  { opacity: 0.85; }
+    .btn-next-scan:active { background: #f0f4ff; }
+  </style>
+</head>
+<body>
+
+<div id="phase-scan" class="phase">
+  <header class="scan-header">
+    <h1>&#128247; QRコードをスキャン</h1>
+    <p>スタンプのQRコードにカメラを向けてください</p>
+  </header>
+  <div class="scan-body">
+    <div class="viewfinder">
+      <div id="qr-reader"></div>
+      <div id="vf-placeholder">
+        <div class="ph-icon">&#128247;</div>
+        <p>「スキャン開始」を押してください</p>
+      </div>
+      <div class="corner-frame" id="corner-frame"><span></span></div>
+      <div id="scan-line"></div>
+    </div>
+    <div class="status-pill" id="status-pill">QRコードを読み取ります</div>
+    <button id="btn-start" onclick="startScan()">&#128247; スキャン開始</button>
+    <a href="index.html" class="back-link">&#8592; スタンプ帳に戻る</a>
+  </div>
+</div>
+
+<div id="phase-image" class="phase hidden">
+  <div class="image-top">
+    <p class="stamp-no" id="img-stamp-no">STAMP #1</p>
+  </div>
+  <div class="char-img-area">
+    <div class="char-img-wrap">
+      <img id="char-image" src="" alt="" />
+      <span id="char-emoji-fallback"></span>
+      <div class="speech-bubble hidden" id="speech-bubble">
+        <p id="speech-text"></p>
+      </div>
+    </div>
+  </div>
+  <div class="image-bottom">
+    <p id="img-char-name"></p>
+    <p id="img-char-sub"></p>
+    <button id="btn-stamp-get" onclick="showCompletePhase()">
+      &#127881; スタンプGET！
+    </button>
+  </div>
+</div>
+
+<div id="phase-complete" class="phase hidden">
+  <div class="confetti-area" id="confetti-area"></div>
+  <div class="complete-card">
+    <div class="complete-badge" id="complete-badge">&#127881; スタンプGET！</div>
+    <img id="complete-char-img" class="complete-char-img" src="" alt=""
+         onerror="this.style.display='none'; document.getElementById('complete-emoji-fb').style.display='block';" />
+    <span id="complete-emoji-fb" class="complete-emoji-fallback" style="display:none;"></span>
+    <p class="complete-name" id="complete-name"></p>
+    <p class="complete-sub"  id="complete-sub"></p>
+    <a href="index.html" class="btn-to-list">&#127381; スタンプ帳を見る</a>
+    <button class="btn-next-scan" onclick="resetToScan()">&#128247; 次のQRをスキャン</button>
+  </div>
+</div>
+
+<script src="js/stamps-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  let scanner  = null;
+  let active   = false;
+  let lastErrT = 0;
+  let curStamp = null;
+  let curIsNew = false;
+
+  function setStatus(text, type) {
+    const el = document.getElementById('status-pill');
+    el.className = 'status-pill' + (type ? ' ' + type : '');
+    el.innerHTML = type === 'scanning'
+      ? `<span class="pulse-dot"></span><span>${text}</span>`
+      : text;
+  }
+
+  function startScan() {
+    document.getElementById('btn-start').style.display = 'none';
+    setStatus('カメラを起動中...', '');
+    scanner = new Html5Qrcode('qr-reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1 },
+      onScanSuccess,
+      () => {}
+    ).then(() => {
+      active = true;
+      document.getElementById('vf-placeholder').style.display = 'none';
+      document.getElementById('corner-frame').style.display   = 'block';
+      document.getElementById('scan-line').style.display      = 'block';
+      setStatus('スキャン中... QRコードに向けてください', 'scanning');
+    }).catch(() => {
+      document.getElementById('btn-start').style.display = 'block';
+      setStatus('&#9888;&#65039; カメラを起動できません。許可してください', 'error');
+    });
+  }
+
+  function onScanSuccess(text) {
+    if (!active) return;
+    let stampId = null;
+    try {
+      const url = new URL(text);
+      if (url.pathname.includes('ar.html') || url.pathname.includes('stamp.html')) {
+        stampId = url.searchParams.get('id');
+      }
+    } catch {
+      const m = text.match(/(?:ar|stamp)\.html\?(?:.*&)?id=(\d+)/);
+      if (m) stampId = m[1];
+    }
+    const id = Number(stampId);
+    if (id >= 1 && id <= 5) {
+      active = false;
+      scanner.stop().catch(() => {});
+      showImagePhase(id);
+    } else {
+      const now = Date.now();
+      if (now - lastErrT > 2500) {
+        lastErrT = now;
+        setStatus('&#9888;&#65039; スタンプ用QRコードではありません', 'error');
+        setTimeout(() => {
+          if (active) setStatus('スキャン中... QRコードに向けてください', 'scanning');
+        }, 2500);
+      }
+    }
+  }
+
+  function showImagePhase(id) {
+    curStamp = STAMPS_CONFIG.find(s => s.id === id);
+    if (!curStamp) return;
+    curIsNew = collectStamp(id);
+
+    const bubble = document.getElementById('speech-bubble');
+    bubble.classList.add('hidden');
+    void bubble.offsetWidth;
+    if (curStamp.speech) {
+      document.getElementById('speech-text').textContent = '「' + curStamp.speech + '」';
+      bubble.classList.remove('hidden');
+    }
+
+    const emojiEl = document.getElementById('char-emoji-fallback');
+    emojiEl.style.display = 'none';
+    emojiEl.textContent   = '';
+
+    const imgEl = document.getElementById('char-image');
+    imgEl.style.display = '';
+    imgEl.src = curStamp.image;
+    imgEl.alt = curStamp.name;
+    imgEl.onerror = () => {
+      imgEl.style.display   = 'none';
+      emojiEl.textContent   = curStamp.emoji;
+      emojiEl.style.display = 'block';
+    };
+
+    document.getElementById('img-stamp-no').textContent  = `STAMP #${curStamp.id}`;
+    document.getElementById('img-char-name').textContent = curStamp.name;
+    document.getElementById('img-char-sub').textContent  = curStamp.subtitle;
+    document.getElementById('btn-stamp-get').style.background = curStamp.color;
+    document.getElementById('btn-stamp-get').style.boxShadow  = `0 6px 24px ${curStamp.color}55`;
+    document.getElementById('phase-image').style.background   =
+      `linear-gradient(180deg, #0d0d1a 40%, ${curStamp.color}22 100%)`;
+
+    document.getElementById('phase-scan').classList.add('hidden');
+    document.getElementById('phase-image').classList.remove('hidden');
+  }
+
+  function showCompletePhase() {
+    if (!curStamp) return;
+    const badge = document.getElementById('complete-badge');
+    if (curIsNew) {
+      badge.textContent = '🎉 スタンプGET！';
+      badge.classList.remove('already');
+    } else {
+      badge.textContent = '✅ 取得済み';
+      badge.classList.add('already');
+    }
+    const cImg = document.getElementById('complete-char-img');
+    cImg.src   = curStamp.image;
+    cImg.alt   = curStamp.name;
+    cImg.style.display = 'block';
+    document.getElementById('complete-emoji-fb').style.display = 'none';
+    document.getElementById('complete-emoji-fb').textContent   = curStamp.emoji;
+    document.getElementById('complete-name').textContent = curStamp.name;
+    document.getElementById('complete-sub').textContent  = curStamp.subtitle;
+    document.querySelector('.btn-to-list').style.background = curStamp.color;
+    document.getElementById('phase-image').classList.add('hidden');
+    document.getElementById('phase-complete').classList.remove('hidden');
+    if (curIsNew) launchConfetti();
+  }
+
+  function resetToScan() {
+    document.getElementById('phase-complete').classList.add('hidden');
+    document.getElementById('phase-scan').classList.remove('hidden');
+    document.getElementById('confetti-area').innerHTML = '';
+    document.getElementById('btn-start').style.display = 'block';
+    const imgEl = document.getElementById('char-image');
+    imgEl.style.display = '';
+    imgEl.src = '';
+    const emjEl = document.getElementById('char-emoji-fallback');
+    emjEl.style.display = 'none';
+    emjEl.textContent   = '';
+    setStatus('QRコードを読み取ります', '');
+    active   = false;
+    scanner  = null;
+    curStamp = null;
+  }
+
+  /* ────────────────────────────────────────
+     QRコードから直接開かれた場合（?id=X）
+     スマホの標準カメラでQRを読むとここに来る。
+     カメラ画面を飛ばして、いきなりキャラクター表示へ。
+  ──────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', () => {
+    const raw = new URLSearchParams(location.search).get('id');
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isInteger(id) || id < 1 || id > 5) return;
+    showImagePhase(id);
+  });
+
+  function launchConfetti() {
+    const area   = document.getElementById('confetti-area');
+    const colors = ['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#C9B1FF','#FF7043','#5C6BC0'];
+    area.innerHTML = '';
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left              = Math.random() * 100 + 'vw';
+      p.style.background        = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      p.style.animationDelay    = Math.random() * 0.6 + 's';
+      p.style.width             = (6 + Math.random() * 8) + 'px';
+      p.style.height            = (6 + Math.random() * 8) + 'px';
+      p.style.borderRadius      = Math.random() > 0.5 ? '50%' : '2px';
+      area.appendChild(p);
+    }
+    setTimeout(() => { area.innerHTML = ''; }, 4000);
+  }
+</script>
+</body>
+</html>

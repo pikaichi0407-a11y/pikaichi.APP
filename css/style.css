@@ -1,7 +1,8 @@
 /* =============================================
-   ARスタンプラリー - グローバルスタイル
+   十千木 百鬼夜行スタンプラリー - グローバルスタイル
    モバイルファースト設計（スマホ縦持ち基準）
    ============================================= */
+
 
 /* ---------- リセット & ベース ---------- */
 *, *::before, *::after {
@@ -11,16 +12,16 @@
 }
 
 :root {
-  --primary: #5C6BC0;
-  --primary-dark: #3949AB;
-  --accent: #FF7043;
-  --bg: #F5F5F5;
-  --surface: #FFFFFF;
-  --text: #212121;
-  --text-sub: #757575;
-  --border: #E0E0E0;
+  --primary: #9333EA;
+  --primary-dark: #7C3AED;
+  --accent: #D97706;
+  --bg: #0d0b1e;
+  --surface: #17152e;
+  --text: #EDE9FE;
+  --text-sub: #8B7FB3;
+  --border: #2D2560;
   --radius: 16px;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   --transition: 0.25s ease;
 }
 
@@ -30,11 +31,17 @@ html {
 }
 
 body {
-  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
-  background: var(--bg);
+  font-family: 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', 'YuMincho', '游明朝', 'MS Mincho', serif;
+  background-color: var(--bg);
   color: var(--text);
-  line-height: 1.6;
+  line-height: 1.7;
   min-height: 100dvh;
+  letter-spacing: 0.04em;
+}
+
+.page-container, .app-header, .bottom-nav {
+  position: relative;
+  z-index: 1;
 }
 
 a {
@@ -51,35 +58,46 @@ a {
 
 /* ---------- ヘッダー ---------- */
 .app-header {
-  background: var(--primary);
+  background: linear-gradient(135deg, #150d30 0%, #2a0d4f 50%, #150d30 100%);
   color: white;
   padding: 16px;
   text-align: center;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.6);
+  border-bottom: 2px solid #D97706;
 }
 
 .app-header h1 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  background: linear-gradient(90deg, #F5D78E, #FBBF24, #F5D78E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: 'Hiragino Mincho ProN', 'YuMincho', serif;
 }
 
 .app-header .subtitle {
   font-size: 0.8rem;
-  opacity: 0.85;
+  opacity: 0.65;
   margin-top: 2px;
+  color: #c4b5fd;
+  -webkit-text-fill-color: #c4b5fd;
 }
 
 /* ---------- 進捗バー ---------- */
 .progress-section {
-  background: var(--surface);
+  background: rgba(23, 21, 46, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--radius);
   padding: 16px;
   margin: 16px 0;
   box-shadow: var(--shadow);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .progress-label {
@@ -104,11 +122,12 @@ a {
 }
 
 .progress-fill {
-  background: linear-gradient(90deg, var(--primary), var(--accent));
+  background: linear-gradient(90deg, #7C3AED, #D97706, #F59E0B);
   height: 100%;
   border-radius: 999px;
   width: 0%;
   transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px rgba(217,119,6,0.5);
 }
 
 /* ---------- スタンプグリッド ---------- */
@@ -119,7 +138,10 @@ a {
 }
 
 .stamp-card {
-  background: var(--surface);
+  background: rgba(23, 21, 46, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius);
   padding: 16px;
   display: flex;
@@ -132,12 +154,13 @@ a {
 }
 
 .stamp-card.collected {
-  border-left: 5px solid var(--primary);
+  border-left: 5px solid var(--accent);
+  background: linear-gradient(90deg, #1e0d3a 0%, var(--surface) 60%);
 }
 
 .stamp-card.locked {
-  opacity: 0.65;
-  filter: grayscale(0.5);
+  opacity: 0.55;
+  filter: grayscale(0.6);
 }
 
 .stamp-card:active {
@@ -145,8 +168,8 @@ a {
 }
 
 .stamp-icon {
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -154,6 +177,22 @@ a {
   font-size: 1.6rem;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+/* キャラクター画像 */
+.stamp-char-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.stamp-lock-icon {
+  font-size: 1.4rem;
+  color: #999;
+  font-weight: 700;
 }
 
 .stamp-info {
@@ -236,8 +275,8 @@ a {
 }
 
 .stamp-detail-icon {
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -245,6 +284,7 @@ a {
   font-size: 3rem;
   margin: 0 auto 16px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  overflow: hidden;
 }
 
 .stamp-detail h2 {
@@ -543,11 +583,11 @@ a {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--surface);
+  background: #100e24;
   display: flex;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #D97706;
   z-index: 200;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.6);
 }
 
 .bottom-nav a {

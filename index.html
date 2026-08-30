@@ -3,17 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#5C6BC0" />
-  <meta name="description" content="ARスタンプラリー - QRコードを読んでキャラクターをARで見よう！" />
-  <title>ARスタンプラリー</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta name="theme-color" content="#150d30" />
+  <meta name="description" content="十千木 百鬼夜行スタンプラリー - QRコードを読んでキャラクターをゲットしよう！" />
+  <title>十千木 百鬼夜行スタンプラリー</title>
+  <link rel="stylesheet" href="css/style.css?v=2" />
+
 </head>
 <body>
 
+  <!-- 背景写真 -->
+  <div style="position:fixed;inset:0;z-index:0;background:url('https://pikaichi0407-a11y.github.io/pikaichi.APP/IMG_1011.jpeg') center top/cover no-repeat;"></div>
+  <div style="position:fixed;inset:0;z-index:0;background:rgba(10,8,25,0.65);"></div>
+
   <!-- ヘッダー -->
   <header class="app-header">
-    <h1>&#127381; ARスタンプラリー</h1>
-    <p class="subtitle">QRコードをスキャンしてスタンプを集めよう</p>
+    <h1>&#127983; 十千木 百鬼夜行スタンプラリー</h1>
+    <p class="subtitle">QRコードをスキャンしてキャラクターをゲットしよう！</p>
   </header>
 
   <main class="page-container">
@@ -21,7 +26,7 @@
     <!-- コンプリートバナー（全取得時に表示） -->
     <div id="complete-banner" class="complete-banner hidden">
       <h2>&#127881; コンプリート！</h2>
-      <p>全5つのスタンプをコンテナ！おめでとうございます！</p>
+      <p>全ての妖怪をゲット！おめでとうございます‼️</p>
     </div>
 
     <!-- 進捗表示 -->
@@ -38,34 +43,15 @@
     <!-- スタンプカード一覧 -->
     <section>
       <div id="stamp-grid" class="stamp-grid">
-        <!-- JS で動的生成 -->
         <p class="text-center" style="color:var(--text-sub);padding:20px;">読み込み中...</p>
       </div>
     </section>
-
-    <!-- ===== 開発用テストパネル ===== -->
-    <section id="test-panel" class="test-panel mt-16">
-      <div class="test-panel-header">
-        <span>&#128295; 開発テストパネル</span>
-        <span class="test-badge">DEV</span>
-      </div>
-      <p class="test-panel-desc">
-        仮ボタンでスタンプ取得をシミュレート。<br>実機ではQRコードが代わりになります。
-      </p>
-      <div class="test-stamp-buttons" id="test-stamp-buttons">
-        <!-- JS で生成 -->
-      </div>
-      <button class="btn-reset" onclick="resetAllStamps(); renderStampGrid(); renderTestButtons();">
-        &#128260; 全リセット
-      </button>
-    </section>
-    <!-- ===== /テストパネル ===== -->
 
     <!-- 使い方ガイド -->
     <section class="marker-guide mt-16">
       <p>各スポットにあるQRコードをスキャンしてスタンプをゲット！</p>
       <p style="font-size:0.8rem;margin-top:8px;color:var(--text-sub);">
-        スタンプ取得後は「ARで見る」ボタンでキャラクターが登場！
+        5つ全部集めてコンプリートを目指そう！
       </p>
     </section>
 
@@ -77,7 +63,7 @@
       <span class="nav-icon">&#127381;</span>
       スタンプ帳
     </a>
-    <a href="#" onclick="openQRScanner(); return false;">
+    <a href="scan.html">
       <span class="nav-icon">&#128247;</span>
       スキャン
     </a>
@@ -88,76 +74,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       renderStampGrid();
-      renderTestButtons();
     });
-
-    // テスト用ボタンを生成
-    function renderTestButtons() {
-      const container = document.getElementById('test-stamp-buttons');
-      if (!container) return;
-      const collected = getCollectedStamps();
-      container.innerHTML = STAMPS_CONFIG.map((stamp) => {
-        const done = collected.includes(stamp.id);
-        return `
-          <button
-            class="test-stamp-btn ${done ? 'done' : ''}"
-            style="--stamp-color: ${stamp.color}"
-            onclick="simulateStamp(${stamp.id})"
-          >
-            <span class="test-btn-emoji">${done ? '✅' : stamp.emoji}</span>
-            <span class="test-btn-label">${stamp.name}</span>
-            <span class="test-btn-state">${done ? '取得済み' : 'タップで取得'}</span>
-          </button>
-        `;
-      }).join('');
-    }
-
-    // スタンプ取得シミュレート
-    function simulateStamp(id) {
-      const isNew = collectStamp(id);
-      renderStampGrid();
-      renderTestButtons();
-      if (isNew) {
-        const stamp = getStampById(id);
-        showToast(`${stamp.emoji} ${stamp.name} を取得しました！`);
-        if (isComplete()) {
-          setTimeout(() => showToast('🎉 全スタンプコンプリート！'), 800);
-        }
-      } else {
-        showToast('このスタンプはすでに取得済みです');
-      }
-    }
-
-    // トースト通知
-    function showToast(msg) {
-      const existing = document.getElementById('toast');
-      if (existing) existing.remove();
-      const toast = document.createElement('div');
-      toast.id = 'toast';
-      toast.textContent = msg;
-      toast.style.cssText = `
-        position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
-        background:rgba(0,0,0,0.82); color:white; padding:10px 20px;
-        border-radius:999px; font-size:0.9rem; z-index:9999; white-space:nowrap;
-        opacity:0; transition:all 0.25s ease; pointer-events:none;
-        max-width:90vw; text-overflow:ellipsis; overflow:hidden;
-      `;
-      document.body.appendChild(toast);
-      requestAnimationFrame(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateX(-50%) translateY(0)';
-      });
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(-50%) translateY(20px)';
-        setTimeout(() => toast.remove(), 300);
-      }, 2500);
-    }
-
-    // QRスキャン（今後実装予定）
-    function openQRScanner() {
-      showToast('QRスキャン機能は今後実装予定です');
-    }
   </script>
 </body>
 </html>

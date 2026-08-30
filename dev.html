@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>開発者パネル - スタンプラリー</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    body { background: #0f0f1a; }
+    .dev-header {
+      background: #1a1a2e;
+      padding: 16px;
+      text-align: center;
+      border-bottom: 2px solid #FFD700;
+    }
+    .dev-header h1 { font-size: 1.1rem; font-weight: 700; color: #FFD700; }
+    .dev-header p  { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+    .dev-badge {
+      display: inline-block;
+      background: #FFD700; color: #000;
+      font-size: 0.7rem; font-weight: 900;
+      padding: 2px 10px; border-radius: 999px;
+      margin-left: 8px; vertical-align: middle;
+      letter-spacing: 0.08em;
+    }
+    .dev-links {
+      display: flex; gap: 10px;
+      padding: 14px 16px;
+      background: #1a1a2e;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .dev-links a {
+      flex: 1; text-align: center;
+      background: rgba(92,107,192,0.25);
+      color: #90CAF9;
+      border: 1px solid rgba(92,107,192,0.4);
+      border-radius: 8px;
+      padding: 10px 6px;
+      font-size: 0.82rem; font-weight: 700;
+      text-decoration: none;
+    }
+    .dev-links a:active { background: rgba(92,107,192,0.5); }
+  </style>
+</head>
+<body>
+
+  <div class="dev-header">
+    <h1>&#128295; 開発者パネル <span class="dev-badge">DEV ONLY</span></h1>
+    <p>このページはお客様に見せないでください</p>
+  </div>
+
+  <div class="dev-links">
+    <a href="index.html">&#127968; お客様用ページ</a>
+    <a href="qr-print.html">&#128438; QR印刷ページ</a>
+    <a href="scan.html">&#128247; スキャン画面</a>
+  </div>
+
+  <main class="page-container">
+
+    <!-- 進捗確認 -->
+    <section class="progress-section">
+      <div class="progress-label">
+        <span>現在のスタンプ進捗</span>
+        <strong><span id="progress-count">0 / 5</span></strong>
+      </div>
+      <div class="progress-track">
+        <div id="progress-bar" class="progress-fill"></div>
+      </div>
+    </section>
+
+    <!-- スタンプ取得テスト -->
+    <section id="test-panel" class="test-panel mt-16">
+      <div class="test-panel-header">
+        <span>&#128295; スタンプ取得テスト</span>
+        <span class="test-badge">TEST</span>
+      </div>
+      <p class="test-panel-desc">
+        ボタンをタップしてスタンプ取得をシミュレート。<br>
+        実際はQRコードをスキャンすると取得されます。
+      </p>
+      <div class="test-stamp-buttons" id="test-stamp-buttons"></div>
+      <button class="btn-reset" onclick="doReset()">
+        &#128260; 全リセット（スタンプを全部消す）
+      </button>
+    </section>
+
+    <!-- QRコード一覧 -->
+    <section class="test-panel mt-16">
+      <div class="test-panel-header">
+        <span>&#128247; スタンプQRコード</span>
+        <span class="test-badge" style="background:#3949AB;color:white;">QR</span>
+      </div>
+      <p class="test-panel-desc">
+        各スポットに設置するQRコードです。<br>
+        <a href="qr-print.html" style="color:#90CAF9;font-weight:700;">&#128438; 5枚まとめて印刷ページへ &rarr;</a>
+      </p>
+      <div id="qr-list"></div>
+    </section>
+
+  </main>
+
+  <script src="js/stamps-config.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const BASE_URL = 'https://pikaichi0407-a11y.github.io/pikaichi.APP/scan.html?id=';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderStampGrid();
+      renderTestButtons();
+      renderQRList();
+    });
+
+    function renderTestButtons() {
+      const container = document.getElementById('test-stamp-buttons');
+      if (!container) return;
+      const collected = getCollectedStamps();
+      container.innerHTML = STAMPS_CONFIG.map((stamp) => {
+        const done = collected.includes(stamp.id);
+        return `
+          <button
+            class="test-stamp-btn ${done ? 'done' : ''}"
+            style="--stamp-color: ${stamp.color}"
+            onclick="simulateStamp(${stamp.id})"
+          >
+            <span class="test-btn-emoji">${done ? '✅' : stamp.emoji}</span>
+            <span class="test-btn-label">${stamp.name}</span>
+            <span class="test-btn-state">${done ? '取得済み' : 'タップで取得'}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function simulateStamp(id) {
+      const isNew = collectStamp(id);
+      renderStampGrid();
+      renderTestButtons();
+      const stamp = getStampById(id);
+      showToast(isNew ? `${stamp.emoji} ${stamp.name} を取得！` : 'すでに取得済みです');
+      if (isNew && isComplete()) {
+        setTimeout(() => showToast('🎉 全スタンプコンプリート！'), 800);
+      }
+    }
+
+    function doReset() {
+      if (!confirm('スタンプを全部リセットしますか？')) return;
+      resetAllStamps();
+      renderStampGrid();
+      renderTestButtons();
+      showToast('✅ リセットしました');
+    }
+
+    function renderQRList() {
+      const container = document.getElementById('qr-list');
+      STAMPS_CONFIG.forEach((stamp) => {
+        const url = BASE_URL + stamp.id;
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'margin-bottom:20px;';
+        wrap.innerHTML = `
+          <p style="text-align:center;font-size:0.82rem;font-weight:700;color:#a0aec0;margin-bottom:8px;">
+            ${stamp.emoji} ${stamp.name}
+          </p>
+          <div id="qr-${stamp.id}" style="display:flex;justify-content:center;background:white;padding:12px;border-radius:12px;"></div>
+          <p style="text-align:center;font-size:0.58rem;color:#4a5568;word-break:break-all;margin-top:6px;">${url}</p>
+        `;
+        container.appendChild(wrap);
+        new QRCode(document.getElementById(`qr-${stamp.id}`), {
+          text: url,
+          width: 180, height: 180,
+          colorDark: stamp.color,
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+      });
+    }
+
+    function showToast(msg) {
+      const existing = document.getElementById('toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.id = 'toast';
+      toast.textContent = msg;
+      toast.style.cssText = `
+        position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+        background:rgba(0,0,0,0.82); color:white; padding:10px 20px;
+        border-radius:999px; font-size:0.9rem; z-index:9999; white-space:nowrap;
+        opacity:0; transition:all 0.25s ease; pointer-events:none;
+      `;
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+      });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

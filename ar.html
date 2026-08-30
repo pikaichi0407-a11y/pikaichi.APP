@@ -3,432 +3,263 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
-  <title>AR体験 - ARスタンプラリー</title>
-
-  <!--
-    A-Frame 1.4.2  : 3D/VRシーン描画
-    AR.js 3.x      : カメラ + マーカートラッキング
-    ※ AR.js は HTTPS（または localhost）のみ動作
-  -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-
+  <meta name="theme-color" content="#0d0d1a" />
+  <title>キャラクター - スタンプラリー</title>
+  <link rel="stylesheet" href="css/style.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
-      background: #000;
-      overflow: hidden;
-    }
-
-    a-scene { width: 100vw; height: 100vh; }
-
-    /* ── ローディング ── */
-    #ar-loading {
-      position: fixed; inset: 0;
       background: #0d0d1a;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
       color: white;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 16px; z-index: 1500; text-align: center; padding: 24px;
     }
-    #ar-loading p { font-size: 0.9rem; opacity: 0.75; }
-    .spinner {
-      width: 44px; height: 44px;
-      border: 3px solid rgba(255,255,255,0.15);
-      border-top-color: white;
+
+    /* ── ヘッダー ── */
+    .char-header {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      padding: max(14px, env(safe-area-inset-top)) 16px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .btn-back-header {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .header-title {
+      font-size: 1rem;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
+    /* ── メインコンテンツ ── */
+    .char-main {
+      width: 100%;
+      max-width: 480px;
+      padding: 32px 20px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+    }
+
+    /* ── スタンプGETバッジ ── */
+    .get-badge {
+      background: linear-gradient(135deg, #FFD700, #FF8C00);
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 900;
+      padding: 6px 20px;
+      border-radius: 999px;
+      letter-spacing: 0.06em;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .get-badge.hidden { display: none; }
+
+    /* ── キャラクター画像 ── */
+    .char-img-wrap {
+      width: min(72vw, 280px);
+      height: min(72vw, 280px);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      overflow: hidden;
+      border: 6px solid #5C6BC0;
+      background: rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6rem;
+      box-shadow: 0 0 60px rgba(92,107,192,0.4);
+      animation: floatIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .char-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      display: block;
+    }
 
-    /* ── マーカーガイドモーダル ── */
-    #marker-modal {
-      position: fixed; inset: 0;
-      background: rgba(10,10,26,0.94);
-      z-index: 2000;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 28px; gap: 14px;
-      color: white; text-align: center;
+    @keyframes floatIn {
+      0%   { transform: translateY(30px) scale(0.85); opacity: 0; }
+      100% { transform: translateY(0)    scale(1);    opacity: 1; }
     }
-    #marker-modal.hidden { display: none; }
+    @keyframes popIn {
+      0%   { transform: scale(0.6); opacity: 0; }
+      70%  { transform: scale(1.08); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
 
-    .modal-shape-preview {
-      width: 100px; height: 100px;
-      border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 3rem;
-      box-shadow: 0 0 40px rgba(255,255,255,0.15);
+    /* ── テキスト ── */
+    .char-name {
+      font-size: 1.5rem;
+      font-weight: 700;
     }
-    #marker-modal h2 { font-size: 1.2rem; font-weight: 700; }
-    #marker-modal .modal-sub {
-      font-size: 0.82rem; opacity: 0.7; line-height: 1.65;
+    .char-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.75;
+      margin-top: -8px;
     }
-    #marker-modal .shape-hint {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px;
-      padding: 10px 16px;
-      font-size: 0.8rem;
-      opacity: 0.85;
+    .char-desc {
+      font-size: 0.88rem;
+      line-height: 1.7;
+      opacity: 0.7;
+      background: rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 14px 16px;
     }
-    #marker-modal img.hiro-img {
-      width: 180px; height: 180px;
-      border: 3px solid rgba(255,255,255,0.5);
-      border-radius: 12px;
-    }
-    #btn-start-ar {
+
+    /* ── ボタン ── */
+    .btn-home {
+      display: block;
+      width: 100%;
+      max-width: 320px;
       background: #5C6BC0;
-      color: white; border: none;
-      border-radius: 999px;
-      padding: 14px 0; font-size: 1rem; font-weight: 700;
-      cursor: pointer; width: 100%; max-width: 320px;
-      box-shadow: 0 4px 20px rgba(92,107,192,0.5);
-      transition: background 0.2s;
-    }
-    #btn-start-ar:active { background: #3949AB; }
-
-    /* ── エラー ── */
-    #ar-error {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.9);
-      color: white; text-align: center;
-      padding: 40px 24px; z-index: 9999;
-      display: none;
-      flex-direction: column; justify-content: center;
-      align-items: center; gap: 12px;
-    }
-    #ar-error.show { display: flex; }
-    #ar-error h2 { font-size: 1.2rem; }
-    #ar-error p  { font-size: 0.88rem; opacity: 0.8; line-height: 1.6; }
-    #ar-error a  {
-      margin-top: 16px; background: white; color: #5C6BC0;
-      border-radius: 999px; padding: 12px 28px;
-      font-weight: 700; font-size: 1rem; display: inline-block;
-    }
-
-    /* ── 下部オーバーレイ ── */
-    #ar-overlay {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: linear-gradient(transparent, rgba(0,0,0,0.8));
-      color: white; padding: 24px 16px 44px;
-      text-align: center; z-index: 1000; pointer-events: none;
-    }
-    #ar-overlay.hidden { display: none; }
-    #ar-title  { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
-    #ar-hint   { font-size: 0.8rem; opacity: 0.8; margin-bottom: 6px; }
-    #ar-shape-label {
-      display: inline-block;
-      background: rgba(255,255,255,0.15);
-      border-radius: 999px;
-      padding: 3px 12px;
-      font-size: 0.72rem;
-      opacity: 0.85;
-    }
-
-    /* ── 戻るボタン ── */
-    #ar-back {
-      position: fixed;
-      top: max(14px, env(safe-area-inset-top));
-      left: 14px;
-      background: rgba(0,0,0,0.6);
       color: white;
-      border: 1px solid rgba(255,255,255,0.25);
+      border: none;
       border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 0.9rem; font-weight: 700;
-      z-index: 1000; pointer-events: auto;
-      backdrop-filter: blur(6px);
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(92,107,192,0.5);
+    }
+    .btn-scan {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 999px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
       text-decoration: none;
     }
-    #ar-back.hidden { display: none; }
 
-    /* ── マーカー未検出インジケーター ── */
-    #scanning-indicator {
-      position: fixed;
-      top: max(14px, env(safe-area-inset-top));
-      right: 14px;
-      background: rgba(0,0,0,0.6);
-      color: white;
-      border-radius: 999px;
-      padding: 6px 14px;
-      font-size: 0.72rem;
-      z-index: 1000;
-      display: flex; align-items: center; gap: 6px;
-      backdrop-filter: blur(6px);
+    /* ── エラー ── */
+    #char-error {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 40px 24px;
+      text-align: center;
     }
-    #scanning-indicator.hidden { display: none; }
-    .scan-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: #FF6B6B;
-      animation: pulse 1.2s ease-in-out infinite;
-    }
-    .scan-dot.found { background: #4CAF50; animation: none; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.4; transform: scale(0.75); }
-    }
+    #char-error.show { display: flex; }
+    #char-error h2  { font-size: 1.2rem; }
+    #char-error p   { font-size: 0.88rem; opacity: 0.75; line-height: 1.6; }
   </style>
 </head>
 <body>
 
-<!-- ローディング -->
-<div id="ar-loading">
-  <div class="spinner"></div>
-  <p>ARを準備しています…</p>
-</div>
+<!-- ヘッダー -->
+<header class="char-header">
+  <a href="index.html" class="btn-back-header">&#8592; スタンプ帳</a>
+  <span class="header-title" id="header-title">キャラクター</span>
+</header>
 
-<!-- マーカーガイドモーダル -->
-<div id="marker-modal" class="hidden">
-  <div id="modal-shape-icon" class="modal-shape-preview"></div>
-  <h2 id="modal-title">キャラクターをARで見る</h2>
-  <p class="modal-sub">
-    以下の <strong>Hiroマーカー</strong> を印刷するか、<br>
-    別の画面に表示して、カメラを向けてください。
-  </p>
-  <img
-    class="hiro-img"
-    src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png"
-    alt="Hiroマーカー"
-    onerror="this.style.display='none'"
-  />
-  <p class="shape-hint" id="modal-shape-hint">仮オブジェクト表示中（.glb未配置）</p>
-  <p class="modal-sub" style="font-size:0.76rem;">
-    ⚠️ カメラの許可を求められたら「許可」を選んでください。<br>
-    iOSは Safari、AndroidはChromeで開いてください。
-  </p>
-  <button id="btn-start-ar">ARを開始する ▶</button>
-</div>
+<!-- メインコンテンツ -->
+<main class="char-main" id="char-main">
+
+  <!-- スタンプGETバッジ（新規取得時） -->
+  <div class="get-badge hidden" id="get-badge">&#127881; スタンプGET！</div>
+
+  <!-- キャラクター画像 -->
+  <div class="char-img-wrap" id="char-img-wrap">
+    <span id="char-emoji-fallback"></span>
+  </div>
+
+  <!-- テキスト -->
+  <p class="char-name"     id="char-name"></p>
+  <p class="char-subtitle" id="char-subtitle"></p>
+  <p class="char-desc"     id="char-desc"></p>
+
+  <!-- ボタン -->
+  <a href="index.html" class="btn-home">&#127381; スタンプ帳を見る</a>
+  <a href="scan.html"  class="btn-scan">&#128247; 次のQRをスキャン</a>
+
+</main>
 
 <!-- エラー -->
-<div id="ar-error">
-  <h2>⚠️ エラー</h2>
-  <p id="ar-error-msg">無効なスタンプIDです。スタンプ帳から開いてください。</p>
-  <a href="index.html">スタンプ帳へ戻る</a>
+<div id="char-error">
+  <h2>&#9888;&#65039; エラー</h2>
+  <p id="char-error-msg">無効なスタンプIDです。<br>スタンプ帳から開いてください。</p>
+  <a href="index.html" class="btn-home">スタンプ帳へ戻る</a>
 </div>
-
-<!-- 下部ヒント（AR起動後） -->
-<div id="ar-overlay" class="hidden">
-  <p id="ar-title">スポット名</p>
-  <p id="ar-hint">Hiroマーカーにカメラを向けてください</p>
-  <span id="ar-shape-label"></span>
-</div>
-
-<!-- 戻るボタン -->
-<a id="ar-back" href="index.html" class="hidden">← 戻る</a>
-
-<!-- スキャンインジケーター -->
-<div id="scanning-indicator" class="hidden">
-  <div class="scan-dot" id="scan-dot"></div>
-  <span id="scan-text">マーカーを探しています</span>
-</div>
-
-<!--
-  A-Frame シーン
-  ・embedded        : ブラウザUIを非表示
-  ・arjs            : AR.js 設定
-  ・vr-mode-ui      : VRボタン非表示
--->
-<a-scene
-  id="ar-scene"
-  embedded
-  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-  renderer="logarithmicDepthBuffer: true; precision: medium;"
-  vr-mode-ui="enabled: false"
-  style="display:none;"
->
-  <!--
-    Hiro マーカー
-    マーカーが検出されると中の要素が表示される
-  -->
-  <a-marker id="hiro-marker" preset="hiro">
-    <!--
-      プレースホルダー形状コンテナ
-      JS から形状・色を動的に設定する
-    -->
-    <a-entity id="ar-character-container"></a-entity>
-
-    <!-- マーカー上の発光リング -->
-    <a-circle
-      color="#5C6BC0"
-      opacity="0.25"
-      radius="0.65"
-      rotation="-90 0 0"
-      position="0 0.01 0"
-    ></a-circle>
-    <a-circle
-      color="#5C6BC0"
-      opacity="0.1"
-      radius="0.85"
-      rotation="-90 0 0"
-      position="0 0.005 0"
-    ></a-circle>
-  </a-marker>
-
-  <a-entity camera></a-entity>
-</a-scene>
 
 <script src="js/stamps-config.js"></script>
 <script src="js/app.js"></script>
 <script>
-  // ---- 初期化 ----
   document.addEventListener('DOMContentLoaded', () => {
     const id      = getStampIdFromURL();
-    const errorEl = document.getElementById('ar-error');
-    const errMsg  = document.getElementById('ar-error-msg');
-    const loading = document.getElementById('ar-loading');
-    const modal   = document.getElementById('marker-modal');
+    const errorEl = document.getElementById('char-error');
+    const mainEl  = document.getElementById('char-main');
 
-    // ID チェック
     if (!id || !getStampById(id)) {
-      loading.style.display = 'none';
-      errorEl.classList.add('show');
-      return;
-    }
-
-    // 未取得チェック
-    if (!isStampCollected(id)) {
-      loading.style.display = 'none';
-      errMsg.textContent = 'このスタンプはまだ取得されていません。\nQRコードをスキャンしてください。';
+      mainEl.style.display = 'none';
       errorEl.classList.add('show');
       return;
     }
 
     const stamp = getStampById(id);
+    const isNew = collectStamp(id);
 
-    // モーダルのプレビューをスタンプに合わせて設定
-    document.getElementById('modal-title').textContent
-      = `${stamp.emoji} ${stamp.name} をARで見る`;
-    const iconEl = document.getElementById('modal-shape-icon');
-    iconEl.textContent = stamp.emoji;
-    iconEl.style.background = stamp.color + '33'; // 20% opacity
-    iconEl.style.border = `2px solid ${stamp.color}`;
+    // ヘッダータイトル
+    document.getElementById('header-title').textContent = stamp.name;
 
-    const hintEl = document.getElementById('modal-shape-hint');
-    hintEl.textContent = stamp.model
-      ? `🎮 仮オブジェクト: ${stamp.placeholder.label}（.glb 配置後にキャラクターに変わります）`
-      : `🎮 仮オブジェクト: ${stamp.placeholder.label}`;
-
-    // ロード完了 → モーダル表示
-    setTimeout(() => {
-      loading.style.display = 'none';
-      modal.classList.remove('hidden');
-    }, 700);
-
-    // 「ARを開始する」ボタン
-    document.getElementById('btn-start-ar').addEventListener('click', () => {
-      modal.classList.add('hidden');
-      startAR(stamp);
-    });
-  });
-
-  // ---- AR 開始 ----
-  function startAR(stamp) {
-    const scene     = document.getElementById('ar-scene');
-    const overlay   = document.getElementById('ar-overlay');
-    const backBtn   = document.getElementById('ar-back');
-    const indicator = document.getElementById('scanning-indicator');
-
-    scene.style.display = 'block';
-    overlay.classList.remove('hidden');
-    backBtn.classList.remove('hidden');
-    indicator.classList.remove('hidden');
-
-    // 下部テキスト設定
-    document.getElementById('ar-title').textContent
-      = `${stamp.emoji} ${stamp.name}`;
-    document.getElementById('ar-shape-label').textContent
-      = `仮オブジェクト: ${stamp.placeholder.label}`;
-
-    if (scene.hasLoaded) {
-      buildCharacter(stamp);
-    } else {
-      scene.addEventListener('loaded', () => buildCharacter(stamp));
+    // スタンプGETバッジ
+    if (isNew) {
+      document.getElementById('get-badge').classList.remove('hidden');
     }
 
-    // マーカー検出イベント
-    const marker = document.getElementById('hiro-marker');
-    marker.addEventListener('markerFound', () => {
-      const dot  = document.getElementById('scan-dot');
-      const text = document.getElementById('scan-text');
-      if (dot)  dot.classList.add('found');
-      if (text) text.textContent = 'マーカー検出！';
-    });
-    marker.addEventListener('markerLost', () => {
-      const dot  = document.getElementById('scan-dot');
-      const text = document.getElementById('scan-text');
-      if (dot)  dot.classList.remove('found');
-      if (text) text.textContent = 'マーカーを探しています';
-    });
-  }
+    // キャラクター画像
+    const wrap = document.getElementById('char-img-wrap');
+    wrap.style.borderColor = stamp.color;
+    wrap.style.boxShadow   = `0 0 60px ${stamp.color}66`;
+    wrap.style.background  = stamp.color + '18';
+    wrap.innerHTML = '';  // クリア
 
-  // ---- プレースホルダー形状をシーンに生成 ----
-  function buildCharacter(stamp) {
-    const container = document.getElementById('ar-character-container');
-    if (!container) return;
+    if (stamp.image) {
+      const img = document.createElement('img');
+      img.src   = stamp.image;
+      img.alt   = stamp.name;
+      img.onerror = () => {
+        wrap.innerHTML = '';
+        const span = document.createElement('span');
+        span.textContent = stamp.emoji;
+        span.style.fontSize = '6rem';
+        wrap.appendChild(span);
+      };
+      wrap.appendChild(img);
+    } else {
+      const span = document.createElement('span');
+      span.textContent = stamp.emoji;
+      span.style.fontSize = '6rem';
+      wrap.appendChild(span);
+    }
 
-    // 既存の子要素をクリア
-    container.innerHTML = '';
-
-    const ph = stamp.placeholder;
-    const glbPath = stamp.model;
-
-    // .glb ファイルが存在するか HEAD リクエストで確認
-    checkFileExists(glbPath).then((exists) => {
-      if (exists) {
-        // GLB が存在する → gltf-model エンティティを生成
-        const entity = document.createElement('a-entity');
-        entity.setAttribute('gltf-model', `url(${glbPath})`);
-        entity.setAttribute('scale', stamp.modelScale);
-        entity.setAttribute('position', stamp.modelPosition);
-        entity.setAttribute('rotation', stamp.modelRotation);
-        entity.setAttribute('animation',
-          'property: rotation; to: 0 360 0; loop: true; dur: 5000; easing: linear;');
-        container.appendChild(entity);
-      } else {
-        // GLB が存在しない → プレースホルダー形状を表示
-        buildPlaceholder(container, ph);
-      }
-    });
-  }
-
-  function buildPlaceholder(container, ph) {
-    // メイン形状
-    const shape = document.createElement(ph.shape);
-    shape.setAttribute('color', ph.color);
-    shape.setAttribute('scale', ph.scale);
-    shape.setAttribute('position', ph.position);
-    shape.setAttribute('roughness', '0.3');
-    shape.setAttribute('metalness', '0.2');
-    // Y軸回転アニメーション
-    shape.setAttribute('animation__rot',
-      'property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear;');
-    // 上下に浮遊するアニメーション
-    const baseY = parseFloat(ph.position.split(' ')[1]);
-    shape.setAttribute('animation__float',
-      `property: position; from: ${ph.position}; to: 0 ${baseY + 0.08} 0; ` +
-      'dir: alternate; loop: true; dur: 1800; easing: easeInOutSine;');
-    container.appendChild(shape);
-
-    // 影リング（地面エフェクト）
-    const shadow = document.createElement('a-circle');
-    shadow.setAttribute('color', ph.color);
-    shadow.setAttribute('opacity', '0.18');
-    shadow.setAttribute('radius', '0.28');
-    shadow.setAttribute('rotation', '-90 0 0');
-    shadow.setAttribute('position', '0 0.01 0');
-    container.appendChild(shadow);
-  }
-
-  // ---- ファイル存在確認 ----
-  function checkFileExists(path) {
-    return fetch(path, { method: 'HEAD' })
-      .then((r) => r.ok)
-      .catch(() => false);
-  }
+    // テキスト
+    document.getElementById('char-name').textContent     = stamp.name;
+    document.getElementById('char-subtitle').textContent = stamp.subtitle;
+    document.getElementById('char-desc').textContent     = stamp.description;
+  });
 </script>
 </body>
 </html>
