@@ -161,9 +161,73 @@
       justify-content: center;
       padding: 16px;
       width: 100%;
+      position: relative;
     }
+
+    /* ── 当たり演出：後光（回転する光線） ── */
+    .burst {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 150vmax; height: 150vmax;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      background: repeating-conic-gradient(
+        from 0deg at 50% 50%,
+        var(--ray, #FFD700) 0deg 5deg,
+        transparent 5deg 16deg
+      );
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 8%, transparent 52%);
+      mask-image: radial-gradient(circle at 50% 50%, #000 8%, transparent 52%);
+      animation: burstIn 0.55s ease-out 0.05s forwards,
+                 spin 26s linear infinite;
+    }
+    @keyframes burstIn {
+      from { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
+      to   { opacity: 0.30; transform: translate(-50%,-50%) scale(1); }
+    }
+    @keyframes spin {
+      to { transform: translate(-50%,-50%) rotate(360deg); }
+    }
+
+    /* ── 当たり演出：中央の光のにじみ ── */
+    .glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: min(92vw, 460px); height: min(92vw, 460px);
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(circle,
+        var(--glow, #5C6BC0) 0%,
+        transparent 68%);
+      opacity: 0;
+      animation: glowIn 0.7s ease-out forwards;
+    }
+    @keyframes glowIn {
+      from { opacity: 0;    transform: translate(-50%,-50%) scale(0.6); }
+      to   { opacity: 0.55; transform: translate(-50%,-50%) scale(1); }
+    }
+
+    /* ── 当たり演出：舞い上がるキラキラ ── */
+    .sparkle {
+      position: absolute;
+      pointer-events: none;
+      z-index: 2;
+      font-size: 1rem;
+      animation: sparkleUp 1.5s ease-out forwards;
+    }
+    @keyframes sparkleUp {
+      0%   { opacity: 0; transform: translateY(20px) scale(0.4) rotate(0deg); }
+      25%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-130px) scale(1.15) rotate(180deg); }
+    }
+
     .char-img-wrap {
       position: relative;
+      z-index: 1;
       display: inline-flex;
       align-items: flex-end;
       justify-content: center;
@@ -222,19 +286,58 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
+      position: relative;
+      z-index: 3;
     }
+
+    /* 「妖怪をゲット！」の帯 */
+    .get-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #FFE066, #FFB300, #FF8C00);
+      color: #2A1400;
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      padding: 4px 20px;
+      border-radius: 999px;
+      box-shadow: 0 4px 16px rgba(255,180,0,0.45);
+      animation: badgePop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.45s both;
+    }
+    @keyframes badgePop {
+      from { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+      to   { transform: scale(1)   rotate(0deg);   opacity: 1; }
+    }
+
     #img-char-name {
-      font-size: 1.4rem;
-      font-weight: 700;
+      font-size: clamp(1.7rem, 8vw, 2.3rem);
+      font-weight: 900;
       text-align: center;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+      background: linear-gradient(180deg, #FFF6D5 0%, #FFD24A 55%, #F0A000 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 10px rgba(0,0,0,0.6));
+      animation: nameIn 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.6s both;
     }
+    @keyframes nameIn {
+      from { transform: scale(0.55) translateY(18px); opacity: 0; }
+      to   { transform: scale(1)    translateY(0);    opacity: 1; }
+    }
+
     #img-char-sub {
       font-size: 0.88rem;
-      opacity: 0.7;
+      opacity: 0.75;
       text-align: center;
       margin-bottom: 4px;
+      animation: fadeUp 0.5s ease-out 0.85s both;
     }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 0.75; transform: translateY(0); }
+    }
+
     #btn-stamp-get {
       width: 100%; max-width: 320px;
       background: #5C6BC0;
@@ -245,8 +348,22 @@
       cursor: pointer;
       box-shadow: 0 6px 24px rgba(92,107,192,0.5);
       transition: transform 0.15s, background 0.2s;
+      animation: fadeUp2 0.5s ease-out 1s both;
+    }
+    @keyframes fadeUp2 {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     #btn-stamp-get:active { transform: scale(0.96); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .burst, .glow, .sparkle, .get-badge,
+      #img-char-name, #img-char-sub, #btn-stamp-get,
+      #char-image, .speech-bubble {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
 
     #phase-complete {
       background: #f5f5f5;
@@ -365,6 +482,8 @@
     <p class="stamp-no" id="img-stamp-no">STAMP #1</p>
   </div>
   <div class="char-img-area">
+    <div class="burst" id="burst"></div>
+    <div class="glow"  id="glow"></div>
     <div class="char-img-wrap">
       <img id="char-image" src="" alt="" />
       <span id="char-emoji-fallback"></span>
@@ -374,10 +493,11 @@
     </div>
   </div>
   <div class="image-bottom">
+    <span class="get-badge">妖怪をゲット！</span>
     <p id="img-char-name"></p>
     <p id="img-char-sub"></p>
     <button id="btn-stamp-get" onclick="showCompletePhase()">
-      &#127881; スタンプGET！
+      &#127881; スタンプ帳に押す
     </button>
   </div>
 </div>
@@ -489,6 +609,7 @@
     imgEl.src = curStamp.image;
     imgEl.alt = curStamp.name;
     imgEl.onerror = () => {
+      if (!curStamp) return;
       imgEl.style.display   = 'none';
       emojiEl.textContent   = curStamp.emoji;
       emojiEl.style.display = 'block';
@@ -502,10 +623,58 @@
     document.getElementById('btn-stamp-get').style.background = curStamp.color;
     document.getElementById('btn-stamp-get').style.boxShadow  = `0 6px 24px ${curStamp.color}55`;
     document.getElementById('phase-image').style.background   =
-      `linear-gradient(180deg, #0d0d1a 40%, ${curStamp.color}22 100%)`;
+      `radial-gradient(ellipse at 50% 42%, ${curStamp.color}33 0%, #0d0d1a 62%)`;
+
+    // 当たり演出（後光・光のにじみ・キラキラ）を毎回はじめから再生
+    playRevealFX();
 
     document.getElementById('phase-scan').classList.add('hidden');
     document.getElementById('phase-image').classList.remove('hidden');
+  }
+
+  /* ────────────────────────────────────────
+     当たり演出：後光・光のにじみ・舞い上がるキラキラ
+  ──────────────────────────────────────── */
+  function playRevealFX() {
+    const area   = document.querySelector('.char-img-area');
+    const burst  = document.getElementById('burst');
+    const glow   = document.getElementById('glow');
+    const badge  = document.querySelector('.get-badge');
+    const nameEl = document.getElementById('img-char-name');
+    const subEl  = document.getElementById('img-char-sub');
+    const btnEl  = document.getElementById('btn-stamp-get');
+
+    // 光をキャラクターの色に合わせる
+    burst.style.setProperty('--ray',  curStamp.color);
+    glow.style.setProperty('--glow',  curStamp.color);
+
+    // 前回のキラキラを片付ける
+    area.querySelectorAll('.sparkle').forEach(s => s.remove());
+
+    // アニメーションを頭から再生し直す（2体目以降も演出が出るように）
+    [burst, glow, badge, nameEl, subEl, btnEl,
+     document.getElementById('char-image'),
+     document.getElementById('char-emoji-fallback')].forEach(el => {
+      if (!el) return;
+      const a = el.style.animation;
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = a || '';
+    });
+
+    // キラキラを舞い上がらせる
+    const marks = ['✨', '⭐', '💫', '🌟'];
+    for (let i = 0; i < 14; i++) {
+      const s = document.createElement('span');
+      s.className = 'sparkle';
+      s.textContent = marks[i % marks.length];
+      s.style.left = (12 + Math.random() * 76) + '%';
+      s.style.top  = (40 + Math.random() * 45) + '%';
+      s.style.fontSize = (0.7 + Math.random() * 1.1) + 'rem';
+      s.style.animationDelay = (0.15 + Math.random() * 0.7) + 's';
+      area.appendChild(s);
+    }
+    setTimeout(() => area.querySelectorAll('.sparkle').forEach(s => s.remove()), 2600);
   }
 
   function showCompletePhase() {
@@ -538,8 +707,10 @@
     document.getElementById('confetti-area').innerHTML = '';
     document.getElementById('btn-start').style.display = 'block';
     const imgEl = document.getElementById('char-image');
+    // src を空にすると onerror が発火するため、先にハンドラを外す
+    imgEl.onerror = null;
     imgEl.style.display = '';
-    imgEl.src = '';
+    imgEl.removeAttribute('src');
     const emjEl = document.getElementById('char-emoji-fallback');
     emjEl.style.display = 'none';
     emjEl.textContent   = '';
