@@ -133,6 +133,18 @@
 
   const grid = document.getElementById('qr-grid');
 
+  // ライブラリが読み込めなかった場合は、途中で止まらず理由を出す
+  if (typeof QRCode === 'undefined') {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;padding:24px;text-align:center;
+                  border:2px solid #C62828;border-radius:12px;color:#C62828;">
+        <p style="font-weight:700;margin-bottom:8px;">QRコードを生成できませんでした</p>
+        <p style="font-size:0.85rem;">
+          ネットワークに接続してページを再読み込みしてください。<br>
+          （QR生成ライブラリの読み込みに失敗しています）
+        </p>
+      </div>`;
+  } else {
   STAMPS_CONFIG.forEach((stamp) => {
     const url = BASE_URL + stamp.id;
     const color = COLORS[stamp.id] || '#5C6BC0';
@@ -147,7 +159,7 @@
       <div class="qr-card-sub">${stamp.subtitle}</div>
       <div class="qr-wrap" id="qr-${stamp.id}"></div>
       <div class="qr-url">${url}</div>
-      <div class="spot-label">スポット ${stamp.id}</div>
+      <div class="spot-label">スポット ${stamp.id}：${stamp.spot || '未設定'}</div>
     `;
     grid.appendChild(card);
 
@@ -161,6 +173,7 @@
       correctLevel: QRCode.CorrectLevel.M,
     });
   });
+  }
 </script>
 </body>
 </html>

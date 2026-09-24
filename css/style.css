@@ -214,6 +214,18 @@ a {
   margin-top: 2px;
 }
 
+/* 未取得スタンプの道案内ヒント */
+.stamp-hint {
+  font-size: 0.74rem;
+  color: #F5C56B;
+  margin-top: 5px;
+  line-height: 1.45;
+  background: rgba(217, 119, 6, 0.12);
+  border-left: 2px solid rgba(217, 119, 6, 0.55);
+  border-radius: 0 6px 6px 0;
+  padding: 3px 8px;
+}
+
 .stamp-shape-badge {
   display: inline-block;
   margin-top: 4px;

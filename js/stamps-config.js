@@ -1,12 +1,17 @@
 /**
  * スタンプラリー設定ファイル
  *
- * 画像ファイルの対応（gh-pages / assets/ 直下）:
- *   assets/shark-bite.PNG   → シャークバイト  (ID:1)
- *   assets/namazu-chan.PNG  → ナマズちゃん    (ID:2)
- *   assets/real-shark.PNG  → リアルシャークバイト (ID:3)
- *   assets/mitsuwa-chan.PNG → ミツワちゃん    (ID:4)
- *   assets/tochiko-chan.PNG  → トチコちゃん  (ID:5)
+ * スポット番号 = id です。QRコードを現地に貼るときに取り違えないよう、
+ * 必ず id とスポット番号を一致させたまま運用してください。
+ *
+ *   id:1 蚤の市通りの北     → シャークバイト
+ *   id:2 蚤の市通りの南     → ナマズちゃん
+ *   id:3 みずほ銀行奥       → リアルシャークバイト
+ *   id:4 山車会館前広場     → フロッグちゃん
+ *   id:5 流動（妖怪の背中） → トチコちゃん
+ *
+ * spot … 設置場所の名前（スタンプ帳に表示）
+ * hint … まだ取っていない人に見せる道案内（謎解きではなく実用重視）
  */
 
 const STAMPS_CONFIG = [
@@ -19,6 +24,8 @@ const STAMPS_CONFIG = [
     color: '#1565C0',
     emoji: '🦈',
     speech: 'ガブッ！とスタンプGETだぜ！',
+    spot: '蚤の市通りの北',
+    hint: '蚤の市通りを北の端まで進め',
   },
   {
     id: 2,
@@ -29,6 +36,8 @@ const STAMPS_CONFIG = [
     color: '#283593',
     emoji: '🐟',
     speech: '幸運を呼んじゃうよ！',
+    spot: '蚤の市通りの南',
+    hint: '同じ通りを、今度は南のはずれまで',
   },
   {
     id: 3,
@@ -39,6 +48,8 @@ const STAMPS_CONFIG = [
     color: '#0D47A1',
     emoji: '🦈',
     speech: '本気のサメの力、見せてやる！',
+    spot: 'みずほ銀行奥',
+    hint: 'みずほ銀行の裏手、奥にひそむ',
   },
   {
     id: 4,
@@ -49,6 +60,8 @@ const STAMPS_CONFIG = [
     color: '#2E7D32',
     emoji: '🐸',
     speech: 'ようこそ、とちぎ蚤の市へ！',
+    spot: '山車会館前広場',
+    hint: '山車会館の前の広場を探せ',
   },
   {
     id: 5,
@@ -59,6 +72,8 @@ const STAMPS_CONFIG = [
     color: '#E65100',
     emoji: '👧',
     speech: '一緒に栃木を盛り上げよう！',
+    spot: '会場のどこか（歩いています）',
+    hint: '会場を歩く妖怪の背中を見よ',
   },
 ];
 

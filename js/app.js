@@ -82,7 +82,8 @@ function renderStampGrid() {
         </div>
         <div class="stamp-info">
           <p class="stamp-name">${stamp.name}</p>
-          <p class="stamp-sub">${done ? stamp.subtitle : '未取得'}</p>
+          <p class="stamp-sub">${done ? stamp.subtitle : (stamp.spot || '未取得')}</p>
+          ${!done && stamp.hint ? `<p class="stamp-hint">&#128161; ${stamp.hint}</p>` : ''}
         </div>
         ${done ? `<a class="btn-ar" href="stamp.html?id=${stamp.id}" style="background:${stamp.color}">詳細</a>` : ''}
       </div>
