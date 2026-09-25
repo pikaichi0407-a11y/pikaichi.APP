@@ -7,7 +7,28 @@
 const STORAGE_KEY = 'stamp-rally-stamps';
 const TOTAL_STAMPS = 5;
 
+/**
+ * デモモード（?demo=1）
+ * 人に見せるための表示専用モード。全スタンプ取得済みとして振る舞うが、
+ * localStorage には一切書き込まない。デモを見た人が本番で遊ぶときに
+ * 最初からコンプリート状態になってしまうのを防ぐため。
+ */
+function isDemoMode() {
+  try {
+    return new URLSearchParams(location.search).get('demo') === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** デモ中もリンク先にデモであることを引き継ぐ */
+function withDemo(url) {
+  if (!isDemoMode()) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'demo=1';
+}
+
 function getCollectedStamps() {
+  if (isDemoMode()) return STAMPS_CONFIG.map((s) => s.id);
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -21,6 +42,8 @@ function isStampCollected(id) {
 }
 
 function collectStamp(id) {
+  // デモでは保存しない。ただし獲得演出は見せたいので「新規取得」として返す
+  if (isDemoMode()) return true;
   const collected = getCollectedStamps();
   const numId = Number(id);
   if (collected.includes(numId)) return false;
@@ -85,7 +108,7 @@ function renderStampGrid() {
           <p class="stamp-sub">${done ? stamp.subtitle : (stamp.spot || '未取得')}</p>
           ${!done && stamp.hint ? `<p class="stamp-hint">&#128161; ${stamp.hint}</p>` : ''}
         </div>
-        ${done ? `<a class="btn-ar" href="stamp.html?id=${stamp.id}" style="background:${stamp.color}">詳細</a>` : ''}
+        ${done ? `<a class="btn-ar" href="${withDemo('stamp.html?id=' + stamp.id)}" style="background:${stamp.color}">詳細</a>` : ''}
       </div>
     `;
   }).join('');
@@ -161,7 +184,7 @@ function handleStampCollection() {
   }
 
   // 3Dモデル(.glb)が未配置のため、AR ページではなくキャラクター表示ページへ
-  if (arBtn) arBtn.href = `scan.html?id=${stamp.id}`;
+  if (arBtn) arBtn.href = withDemo(`scan.html?id=${stamp.id}`);
 
   const isNew    = collectStamp(id);
   const statusEl = document.getElementById('stamp-status');

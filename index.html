@@ -6,7 +6,20 @@
   <meta name="theme-color" content="#150d30" />
   <meta name="description" content="十千木 百鬼夜行スタンプラリー - QRコードを読んでキャラクターをゲットしよう！" />
   <title>十千木 百鬼夜行スタンプラリー</title>
-  <link rel="stylesheet" href="css/style.css?v=2" />
+  <link rel="stylesheet" href="css/style.css?v=3" />
+  <style>
+    #demo-bar {
+      position: relative; z-index: 2;
+      background: linear-gradient(90deg, #FFC107, #FF9800);
+      color: #2A1400;
+      text-align: center;
+      padding: 7px 14px;
+      font-size: 0.76rem;
+      line-height: 1.5;
+    }
+    #demo-bar strong { font-weight: 900; letter-spacing: 0.12em; margin-right: 8px; }
+    #demo-bar.hidden { display: none; }
+  </style>
 
 </head>
 <body>
@@ -14,6 +27,12 @@
   <!-- 背景写真 -->
   <div style="position:fixed;inset:0;z-index:0;background:url('https://pikaichi0407-a11y.github.io/pikaichi.APP/IMG_1011.jpeg') center top/cover no-repeat;"></div>
   <div style="position:fixed;inset:0;z-index:0;background:rgba(10,8,25,0.65);"></div>
+
+  <!-- デモ表示中の帯（?demo=1 のときだけ出る） -->
+  <div id="demo-bar" class="hidden">
+    <strong>DEMO / 見本</strong>
+    <span>全部集めた状態でお見せしています</span>
+  </div>
 
   <!-- ヘッダー -->
   <header class="app-header">
@@ -74,6 +93,12 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       renderStampGrid();
+      if (isDemoMode()) {
+        document.getElementById('demo-bar').classList.remove('hidden');
+        document.querySelectorAll('.bottom-nav a').forEach(a => {
+          a.href = withDemo(a.getAttribute('href'));
+        });
+      }
     });
   </script>
 </body>

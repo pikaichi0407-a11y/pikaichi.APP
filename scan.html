@@ -211,6 +211,25 @@
       to   { opacity: 0.55; transform: translate(-50%,-50%) scale(1); }
     }
 
+    /* ── デモ表示中のバッジ ── */
+    #demo-badge {
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 193, 7, 0.92);
+      color: #2A1400;
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      padding: 3px 14px;
+      border-radius: 999px;
+      z-index: 50;
+      pointer-events: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    #demo-badge.hidden { display: none; }
+
     /* ── 当たり演出：パーティクル（Canvasで描画） ── */
     #fx-canvas {
       position: fixed;
@@ -475,6 +494,7 @@
 
 <div id="phase-image" class="phase hidden">
   <canvas id="fx-canvas"></canvas>
+  <div id="demo-badge" class="hidden">DEMO / 見本</div>
   <div class="image-top">
     <p class="stamp-no" id="img-stamp-no">STAMP #1</p>
   </div>
@@ -1377,6 +1397,14 @@
      カメラ画面を飛ばして、いきなりキャラクター表示へ。
   ──────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', () => {
+    // デモ中は行き先にも demo=1 を引き継ぐ
+    if (isDemoMode()) {
+      document.querySelectorAll('a[href="index.html"]').forEach(a => {
+        a.href = 'index.html?demo=1';
+      });
+      const badge = document.getElementById('demo-badge');
+      if (badge) badge.classList.remove('hidden');
+    }
     const raw = new URLSearchParams(location.search).get('id');
     if (!raw) return;
     const id = Number(raw);
