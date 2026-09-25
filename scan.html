@@ -675,11 +675,16 @@
   const FX_MODES = ['light', 'onibi', 'inazuma', 'hotaru',
                     'hanabira', 'kinpaku', 'honoo', 'aobi'];
   function currentFxMode() {
+    // ?fx= が付いていれば、それを優先（見比べ・確認用）
     const q = new URLSearchParams(location.search).get('fx');
-    if (!q) return 'light';
-    if (FX_MODES.includes(q)) return q;
-    const n = Number(q);
-    return FX_MODES[n - 1] || 'light';
+    if (q) {
+      if (FX_MODES.includes(q)) return q;
+      const n = Number(q);
+      if (FX_MODES[n - 1]) return FX_MODES[n - 1];
+    }
+    // 通常は妖怪ごとに決めた演出を使う
+    if (curStamp && FX_MODES.includes(curStamp.fx)) return curStamp.fx;
+    return 'light';
   }
 
   function launchParticles(themeColor) {

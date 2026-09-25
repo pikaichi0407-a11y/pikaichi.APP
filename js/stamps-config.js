@@ -12,6 +12,8 @@
  *
  * spot … 設置場所の名前（スタンプ帳に表示）
  * hint … まだ取っていない人に見せる道案内（謎解きではなく実用重視）
+ * fx   … スタンプ獲得時の演出。5か所とも同じだと途中で飽きるため妖怪ごとに変える
+ *        （light=光 / onibi=鬼火 / inazuma=稲妻 / hotaru=蛍 / kinpaku=金箔）
  */
 
 const STAMPS_CONFIG = [
@@ -26,6 +28,7 @@ const STAMPS_CONFIG = [
     speech: 'ガブッ！とスタンプGETだぜ！',
     spot: '蚤の市通りの北',
     hint: '蚤の市通りを北の端まで進め',
+    fx: 'light',   // 明るく歓迎する最初の1体
   },
   {
     id: 2,
@@ -38,6 +41,7 @@ const STAMPS_CONFIG = [
     speech: '幸運を呼んじゃうよ！',
     spot: '蚤の市通りの南',
     hint: '同じ通りを、今度は南のはずれまで',
+    fx: 'hotaru',   // 静かで綺麗な蛍
   },
   {
     id: 3,
@@ -50,6 +54,7 @@ const STAMPS_CONFIG = [
     speech: '本気のサメの力、見せてやる！',
     spot: 'みずほ銀行奥',
     hint: 'みずほ銀行の裏手、奥にひそむ',
+    fx: 'inazuma',   // 一番行ってほしい場所のご褒美
   },
   {
     id: 4,
@@ -62,6 +67,7 @@ const STAMPS_CONFIG = [
     speech: 'ようこそ、とちぎ蚤の市へ！',
     spot: '山車会館前広場',
     hint: '山車会館の前の広場を探せ',
+    fx: 'onibi',   // 妖怪らしい鬼火
   },
   {
     id: 5,
@@ -74,6 +80,7 @@ const STAMPS_CONFIG = [
     speech: '一緒に栃木を盛り上げよう！',
     spot: '会場のどこか（歩いています）',
     hint: '会場を歩く妖怪の背中を見よ',
+    fx: 'kinpaku',   // 見つけにくい妖怪に金色のレア感
   },
 ];
 
