@@ -704,11 +704,15 @@
 
     const P = [];
 
+    // 炎は粒を散らす方式では質感が出ないため、熱の伝播を計算して描く
+    if (mode === 'honoo' || mode === 'aobi') {
+      runFireLoop(ctx, W, H, mode === 'aobi' ? 'blue' : 'red');
+      return;
+    }
+
     if (mode === 'onibi')    { buildOnibi(P, W, H, cx, cy, theme); }
     else if (mode === 'hanabira') { buildHanabira(P, W, H); }
     else if (mode === 'kinpaku')  { buildKinpaku(P, W, H, cx, cy); }
-    else if (mode === 'honoo')    { buildFlame(P, W, H, cx, cy, 'red'); }
-    else if (mode === 'aobi')     { buildFlame(P, W, H, cx, cy, 'blue'); }
     else { buildLight(P, W, H, cx, cy, palette, GOLD, WHITE); }
 
     runFxLoop(ctx, W, H, P, mode);
@@ -826,57 +830,169 @@
   }
 
   /* ── ⑤⑥ 炎（赤／青） ──
-     炎は「芯が白く、外へ行くほど色が冷める」ので、
-     粒の寿命に沿って色を白→橙→赤→暗赤 と移していく。 */
-  const FLAME_RAMP = {
-    red:  [[255,255,238],[255,222,110],[255,146,34],[226,58,16],[104,14,8]],
-    blue: [[240,252,255],[168,234,255],[74,168,255],[42,74,234],[24,20,128]],
-  };
+     粒を散らす方式では「光る玉」にしか見えないため、
+     低解像度の熱マップを持ち、下の熱が上へ伝わりながら
+     冷めていく計算を毎フレーム回して炎を生成する。
+     それを画面サイズへ拡大描画すると、炎の揺らぎが出る。 */
 
-  function rampColor(ramp, t) {
-    const n = ramp.length - 1;
-    const x = Math.max(0, Math.min(0.9999, t)) * n;
-    const i = Math.floor(x), f = x - i;
-    const a = ramp[i], b = ramp[i + 1];
-    return [a[0] + (b[0] - a[0]) * f,
-            a[1] + (b[1] - a[1]) * f,
-            a[2] + (b[2] - a[2]) * f];
+  /* 熱（0-255）を色に変換する対応表を作る */
+  function buildFirePalette(tone) {
+    const stops = (tone === 'blue')
+      ? [[0.00, [  0,  0,  0,   0]],
+         [0.14, [ 18, 22,120,  55]],
+         [0.36, [ 42, 96,238, 160]],
+         [0.62, [ 74,178,255, 220]],
+         [0.84, [168,236,255, 245]],
+         [1.00, [242,253,255, 255]]]
+      : [[0.00, [  0,  0,  0,   0]],
+         [0.14, [ 72, 10,  4,  55]],
+         [0.36, [196, 38, 12, 165]],
+         [0.62, [255,124, 24, 222]],
+         [0.84, [255,214, 96, 246]],
+         [1.00, [255,255,238, 255]]];
+    const pal = new Uint8ClampedArray(256 * 4);
+    for (let i = 0; i < 256; i++) {
+      const t = i / 255;
+      let a = stops[0], b = stops[stops.length - 1];
+      for (let k = 0; k < stops.length - 1; k++) {
+        if (t >= stops[k][0] && t <= stops[k + 1][0]) { a = stops[k]; b = stops[k + 1]; break; }
+      }
+      const f = (b[0] - a[0]) ? (t - a[0]) / (b[0] - a[0]) : 0;
+      for (let c = 0; c < 4; c++) pal[i * 4 + c] = a[1][c] + (b[1][c] - a[1][c]) * f;
+    }
+    return pal;
   }
 
-  function buildFlame(P, W, H, cx, cy, tone) {
-    const ramp = FLAME_RAMP[tone] || FLAME_RAMP.red;
-    const base = H * 1.02;              // 画面の少し下から立ちのぼらせる
+  function runFireLoop(ctx, W, H, tone) {
+    const GW = 176, GH = 250;                 // 熱マップの解像度
+    const off  = document.createElement('canvas');
+    off.width  = GW; off.height = GH;
+    const octx = off.getContext('2d');
+    const img  = octx.createImageData(GW, GH);
+    const data = img.data;
+    const heat = new Uint8Array(GW * GH);
+    const pal  = buildFirePalette(tone);
 
-    // 炎の舌（細長く、キャラクターを包む高さまで昇る）
-    for (let i = 0; i < 92; i++) {
-      // 中央ほど密に、端ほど疎に
-      const bias = (Math.random() + Math.random() - 1);
-      const spread = bias * W * 0.6;
-      P.push({ kind: 'flame', ramp,
-               x: cx + spread,
-               x0: cx + spread,
-               y: base + Math.random() * 60,
-               r: 11 + Math.random() * 22,
-               vy: -(5.2 + Math.random() * 5.4),
-               phase: Math.random() * Math.PI * 2,
-               sway: 10 + Math.random() * 26,
-               squash: 2.1 + Math.random() * 1.5,   // 縦に引き伸ばす
-               life: -Math.random() * 95,
-               max: 78 + Math.random() * 52 });
+    // 火の粉（炎の上に重ねる）
+    const sparks = [];
+    for (let i = 0; i < 26; i++) {
+      sparks.push({ x: W / 2 + (Math.random() - 0.5) * W * 0.8,
+                    y: H + Math.random() * H * 0.25,
+                    r: 1 + Math.random() * 2.2,
+                    vy: -(3.2 + Math.random() * 3.6),
+                    drift: (Math.random() - 0.5) * 1.2,
+                    phase: Math.random() * Math.PI * 2,
+                    life: -Math.random() * 90, max: 80 + Math.random() * 60 });
     }
 
-    // 火の粉（速く弾けて高く昇る）
-    for (let i = 0; i < 30; i++) {
-      P.push({ kind: 'spark', ramp,
-               x: cx + (Math.random() - 0.5) * W * 0.85,
-               y: base - Math.random() * H * 0.25,
-               r: 1.1 + Math.random() * 2.4,
-               vy: -(4.6 + Math.random() * 4.8),
-               drift: (Math.random() - 0.5) * 1.6,
-               phase: Math.random() * Math.PI * 2,
-               life: -Math.random() * 100,
-               max: 78 + Math.random() * 60 });
+    // 火元（それぞれが1本の火柱になる）
+    const ROOTS = [];
+    for (let k = 0; k < 9; k++) {
+      ROOTS.push({ x: 0.08 + (k / 8) * 0.84 + (Math.random() - 0.5) * 0.05,
+                   w: 0.055 + Math.random() * 0.055,
+                   h: 0.75 + Math.random() * 0.55,
+                   wob: 0.012 + Math.random() * 0.03,
+                   seed: Math.random() * 6.28 });
     }
+
+    /* 熱を1段階進める。
+       熱は1フレームに1行ずつしか上がらないので、
+       画面いっぱいに燃え広がるまで待たせないよう事前に回しておく。 */
+    function simulate(power, f) {
+      const base = (GH - 1) * GW;
+      for (let x = 0; x < GW; x++) {
+        const u = x / (GW - 1);
+        // 複数の火元を重ねて、独立した火柱が立つようにする
+        let v = 0;
+        for (let k = 0; k < ROOTS.length; k++) {
+          const r = ROOTS[k];
+          const pos = r.x + Math.sin(f * r.wob + r.seed) * 0.045;   // 火元がゆっくり動く
+          const d = (u - pos) / r.w;
+          v += r.h * Math.exp(-d * d * 3.2);
+        }
+        // 画面端ほど弱める
+        v *= 1 - Math.pow(Math.abs(u - 0.5) * 1.85, 3);
+        v *= power;
+        // 炎は絶えず強弱する
+        v *= 0.72 + Math.sin(f * 0.21 + x * 0.19) * 0.28;
+        heat[base + x] = v > 0.03 ? Math.min(255, (165 + Math.random() * 90) * v) : 0;
+      }
+      for (let y = 0; y < GH - 1; y++) {
+        const row = y * GW, below = (y + 1) * GW;
+        for (let x = 0; x < GW; x++) {
+          const dx = (Math.random() * 3 | 0) - 1;          // 横へのゆらぎ
+          let sx = x + dx;
+          if (sx < 0) sx = 0; else if (sx >= GW) sx = GW - 1;
+          const v = heat[below + sx] - Math.random() * 2.35;
+          heat[row + x] = v > 0 ? v : 0;
+        }
+      }
+    }
+
+    // 表示した瞬間にはもう燃え盛っている状態にしておく
+    for (let i = 0; i < 165; i++) simulate(1, i);
+
+    const TOTAL = 260;
+    let f = 0;
+    ctx.imageSmoothingEnabled = true;
+
+    function step() {
+      f++;
+      const t = f / TOTAL;
+      // 一気に燃え上がり、後半でゆっくり消える
+      const power = t < 0.55 ? 1 : Math.max(0, 1 - (t - 0.55) / 0.45);
+
+      simulate(power, f);
+
+      // 熱マップを色に変換
+      for (let i = 0, n = GW * GH; i < n; i++) {
+        const p = heat[i] * 4;
+        const q = i * 4;
+        data[q]     = pal[p];
+        data[q + 1] = pal[p + 1];
+        data[q + 2] = pal[p + 2];
+        data[q + 3] = pal[p + 3];
+      }
+      octx.putImageData(img, 0, 0);
+
+      // 画面へ拡大描画
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+      // ぼかしをかけて熱マップの格子を消す（炎らしい滑らかさが出る）
+      ctx.filter = 'blur(4px)';
+      ctx.drawImage(off, 0, 0, W, H);
+      ctx.filter = 'none';
+
+      // 火の粉
+      for (const s of sparks) {
+        s.life++;
+        if (s.life < 0 || s.life > s.max) continue;
+        const st = s.life / s.max;
+        s.phase += 0.13;
+        s.y += s.vy;
+        s.vy *= 0.987;
+        s.x += s.drift + Math.sin(s.phase) * 0.7;
+        const a = Math.sin(st * Math.PI) * 0.9 * power;
+        const idx = Math.min(255, 170 + (1 - st) * 85 | 0) * 4;
+        const col = [pal[idx], pal[idx + 1], pal[idx + 2]];
+        const tail = s.r * 5;
+        const g = ctx.createLinearGradient(s.x, s.y, s.x, s.y + tail);
+        g.addColorStop(0, rgba(col, a * 0.7));
+        g.addColorStop(1, rgba(col, 0));
+        ctx.strokeStyle = g;
+        ctx.lineWidth = s.r * 0.9;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x, s.y + tail); ctx.stroke();
+        ctx.fillStyle = rgba([255, 255, 245], a);
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.7, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+
+      if (f < TOTAL) { fxRAF = requestAnimationFrame(step); }
+      else { ctx.clearRect(0, 0, W, H); fxRAF = null; }
+    }
+    fxRAF = requestAnimationFrame(step);
   }
 
   /* ── 共通の描画ループ ── */
@@ -986,48 +1102,6 @@
           ctx.fillStyle = g;
           ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
           ctx.restore();
-
-        } else if (p.kind === 'flame') {
-          p.phase += 0.09;
-          p.y += p.vy;
-          // ゆらゆら揺れながら、上にいくほど細く弱くなる
-          p.x = p.x0 + Math.sin(p.phase) * p.sway * t;
-          const col = rampColor(p.ramp, t);
-          const a   = Math.sin(Math.min(1, t * 1.15) * Math.PI) * 0.62;
-          const rr  = p.r * (1 - t * 0.55);
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.scale(1, p.squash);
-          const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rr);
-          g.addColorStop(0,    rgba(col, a));
-          g.addColorStop(0.45, rgba(col, a * 0.45));
-          g.addColorStop(1,    rgba(col, 0));
-          ctx.fillStyle = g;
-          ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.fill();
-          ctx.restore();
-
-        } else if (p.kind === 'spark') {
-          p.phase += 0.14;
-          p.y += p.vy;
-          p.vy *= 0.985;
-          p.x += p.drift + Math.sin(p.phase) * 0.7;
-          const col = rampColor(p.ramp, t * 0.8);
-          const a   = Math.sin(t * Math.PI) * 0.95;
-          // 尾（速度で伸ばすと雨のような直線になるため長さは固定寄りにする）
-          const tail = p.r * 5.5;
-          const g = ctx.createLinearGradient(p.x, p.y, p.x, p.y + tail);
-          g.addColorStop(0, rgba(col, a * 0.7));
-          g.addColorStop(1, rgba(col, 0));
-          ctx.strokeStyle = g;
-          ctx.lineWidth = p.r * 0.9;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p.x, p.y + tail);
-          ctx.stroke();
-          // 芯
-          ctx.fillStyle = rgba([255, 255, 245], a);
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 0.72, 0, Math.PI * 2); ctx.fill();
 
         } else {
           p.phase += 0.055;
