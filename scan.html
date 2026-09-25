@@ -667,6 +667,20 @@
   ──────────────────────────────────────── */
   let fxRAF = null;
 
+  /* 演出の種類。?fx= で切り替えて見比べられる
+     light … 光とレンズフレア（既定）
+     onibi … 鬼火・人魂がゆらめく
+     hanabira … 花びらが舞う
+     kinpaku … 金箔がひらひら落ちる          */
+  const FX_MODES = ['light', 'onibi', 'hanabira', 'kinpaku'];
+  function currentFxMode() {
+    const q = new URLSearchParams(location.search).get('fx');
+    if (!q) return 'light';
+    if (FX_MODES.includes(q)) return q;
+    const n = Number(q);
+    return FX_MODES[n - 1] || 'light';
+  }
+
   function launchParticles(themeColor) {
     const cv = document.getElementById('fx-canvas');
     if (!cv) return;
@@ -686,10 +700,21 @@
     const WHITE = [255, 250, 235];
     const theme = hexToRGB(themeColor) || [120, 160, 255];
     const palette = [GOLD, WHITE, GOLD, theme];
+    const mode = currentFxMode();
 
     const P = [];
 
-    // ① 放射状の光の筋（一瞬で散る）
+    if (mode === 'onibi')    { buildOnibi(P, W, H, cx, cy, theme); }
+    else if (mode === 'hanabira') { buildHanabira(P, W, H); }
+    else if (mode === 'kinpaku')  { buildKinpaku(P, W, H, cx, cy); }
+    else { buildLight(P, W, H, cx, cy, palette, GOLD, WHITE); }
+
+    runFxLoop(ctx, W, H, P, mode);
+  }
+
+  /* ── ① 光とレンズフレア ── */
+  function buildLight(P, W, H, cx, cy, palette, GOLD, WHITE) {
+    // 放射状の光の筋（一瞬で散る）
     for (let i = 0; i < 26; i++) {
       const a = (Math.PI * 2 * i) / 26 + Math.random() * 0.2;
       const sp = 7 + Math.random() * 9;
@@ -721,10 +746,91 @@
                life: -Math.random() * 56, max: 96 + Math.random() * 68,
                col: palette[i % palette.length] });
     }
+  }
+
+  /* ── ② 鬼火・人魂 ── */
+  function buildOnibi(P, W, H, cx, cy, theme) {
+    const BLUE  = [120, 200, 255];
+    const PALE  = [190, 240, 255];
+    const GREEN = [140, 255, 210];
+    const cols  = [BLUE, PALE, GREEN, theme];
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 30 + Math.random() * 180;
+      P.push({ kind: 'onibi',
+               x: cx + Math.cos(a) * d,
+               y: cy + Math.sin(a) * d * 0.9 + 60,
+               r: 4 + Math.random() * 9,
+               vy: -0.35 - Math.random() * 0.75,
+               phase: Math.random() * Math.PI * 2,
+               sway: 0.7 + Math.random() * 1.6,
+               trail: [],
+               life: -Math.random() * 50, max: 130 + Math.random() * 80,
+               col: cols[i % cols.length] });
+    }
+    // 足元にうっすら漂う霊気
+    for (let i = 0; i < 20; i++) {
+      P.push({ kind: 'ember', x: Math.random() * W, y: cy + 120 + Math.random() * H * 0.35,
+               r: 1.2 + Math.random() * 3, vy: -0.25 - Math.random() * 0.5,
+               drift: (Math.random() - 0.5) * 0.3, phase: Math.random() * Math.PI * 2,
+               life: -Math.random() * 70, max: 120 + Math.random() * 70,
+               col: cols[i % cols.length] });
+    }
+  }
+
+  /* ── ③ 舞い散る花びら ── */
+  function buildHanabira(P, W, H) {
+    const PINK = [255, 183, 206];
+    const PALE = [255, 226, 235];
+    const DEEP = [240, 140, 175];
+    const cols = [PINK, PALE, DEEP];
+    for (let i = 0; i < 40; i++) {
+      P.push({ kind: 'petal',
+               x: Math.random() * W,
+               y: -H * 0.25 + Math.random() * H * 1.15,
+               r: 7 + Math.random() * 9,
+               vy: 1.0 + Math.random() * 1.7,
+               drift: (Math.random() - 0.5) * 1.3,
+               phase: Math.random() * Math.PI * 2,
+               spinX: 0.04 + Math.random() * 0.07,   // 表裏がひるがえる速さ
+               rot: Math.random() * Math.PI * 2,
+               spin: (Math.random() - 0.5) * 0.045,
+               life: -Math.random() * 18, max: 175 + Math.random() * 80,
+               col: cols[i % cols.length] });
+    }
+  }
+
+  /* ── ④ ひらひら落ちる金箔 ── */
+  function buildKinpaku(P, W, H, cx, cy) {
+    const GOLD  = [255, 206, 74];
+    const LIGHT = [255, 240, 170];
+    const DEEP  = [214, 150, 30];
+    const cols  = [GOLD, LIGHT, DEEP, GOLD];
+    for (let i = 0; i < 52; i++) {
+      P.push({ kind: 'foil',
+               x: cx + (Math.random() - 0.5) * W * 1.05,
+               y: -H * 0.3 + Math.random() * H * 1.2,
+               w: 5 + Math.random() * 10,
+               h: 7 + Math.random() * 13,
+               vy: 1.3 + Math.random() * 2.1,
+               drift: (Math.random() - 0.5) * 1.5,
+               phase: Math.random() * Math.PI * 2,
+               spinX: 0.05 + Math.random() * 0.1,
+               rot: Math.random() * Math.PI,
+               spin: (Math.random() - 0.5) * 0.07,
+               life: -Math.random() * 16, max: 165 + Math.random() * 70,
+               col: cols[i % cols.length] });
+    }
+  }
+
+  /* ── 共通の描画ループ ── */
+  function runFxLoop(ctx, W, H, P, mode) {
+    // 光り物は加算合成、実体のある物（花びら・金箔）は通常合成
+    const additive = (mode === 'light' || mode === 'onibi');
 
     function frame() {
       ctx.clearRect(0, 0, W, H);
-      ctx.globalCompositeOperation = 'lighter';   // 光は重なるほど明るく
+      ctx.globalCompositeOperation = additive ? 'lighter' : 'source-over';
       let alive = false;
 
       for (const p of P) {
@@ -755,6 +861,75 @@
           // 出はじめに大きく開いて、消え際に絞る（瞬き）
           const tw = Math.sin(t * Math.PI);
           drawFlare(ctx, p.x, p.y, p.r * (0.35 + tw * 0.9), p.rot, p.col, tw);
+
+        } else if (p.kind === 'onibi') {
+          p.phase += 0.045;
+          p.y += p.vy;
+          p.x += Math.sin(p.phase) * p.sway;
+          const a = Math.sin(t * Math.PI) * 0.95;
+          // 尾を引く
+          p.trail.unshift({ x: p.x, y: p.y });
+          if (p.trail.length > 11) p.trail.pop();
+          p.trail.forEach((q, i) => {
+            const f = (1 - i / p.trail.length);
+            const rr = p.r * f * 0.85;
+            const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, rr * 2.6);
+            g.addColorStop(0,   rgba(p.col, a * f * 0.5));
+            g.addColorStop(0.4, rgba(p.col, a * f * 0.2));
+            g.addColorStop(1,   rgba(p.col, 0));
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(q.x, q.y, rr * 2.6, 0, Math.PI * 2); ctx.fill();
+          });
+          // 芯
+          const core = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 2.4);
+          core.addColorStop(0,    rgba([255, 255, 255], a));
+          core.addColorStop(0.28, rgba(p.col, a * 0.85));
+          core.addColorStop(1,    rgba(p.col, 0));
+          ctx.fillStyle = core;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 2.4, 0, Math.PI * 2); ctx.fill();
+
+        } else if (p.kind === 'petal') {
+          p.phase += p.spinX;
+          p.y += p.vy;
+          p.x += p.drift + Math.sin(p.phase) * 1.1;
+          p.rot += p.spin;
+          const flip = Math.abs(Math.cos(p.phase));       // 表裏のひるがえり
+          const a = Math.min(1, Math.sin(t * Math.PI) * 2.2);
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.scale(0.35 + flip * 0.65, 1);
+          ctx.globalAlpha = a;
+          ctx.fillStyle = rgba(p.col, 1);
+          ctx.beginPath();
+          // 桜の花びら（先端に切れ込み）
+          ctx.moveTo(0, -p.r);
+          ctx.bezierCurveTo( p.r * 0.95, -p.r * 0.45,  p.r * 0.65, p.r * 0.7, 0, p.r);
+          ctx.bezierCurveTo(-p.r * 0.65,  p.r * 0.7, -p.r * 0.95, -p.r * 0.45, 0, -p.r);
+          ctx.fill();
+          ctx.restore();
+
+        } else if (p.kind === 'foil') {
+          p.phase += p.spinX;
+          p.y += p.vy;
+          p.x += p.drift + Math.sin(p.phase) * 1.3;
+          p.rot += p.spin;
+          const flip = Math.cos(p.phase);                  // 箔がひるがえって光る
+          const a = Math.min(1, Math.sin(t * Math.PI) * 2.4);
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.scale(1, Math.max(0.12, Math.abs(flip)));
+          ctx.globalAlpha = a;
+          // 表を向くほど明るく
+          const lit = 0.55 + Math.abs(flip) * 0.45;
+          const g = ctx.createLinearGradient(-p.w / 2, 0, p.w / 2, 0);
+          g.addColorStop(0,   rgba(p.col.map(v => v * lit * 0.75), 1));
+          g.addColorStop(0.5, rgba(p.col.map(v => Math.min(255, v * lit * 1.25)), 1));
+          g.addColorStop(1,   rgba(p.col.map(v => v * lit * 0.75), 1));
+          ctx.fillStyle = g;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
 
         } else {
           p.phase += 0.055;
