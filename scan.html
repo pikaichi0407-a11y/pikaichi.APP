@@ -672,7 +672,7 @@
      onibi … 鬼火・人魂がゆらめく
      hanabira … 花びらが舞う
      kinpaku … 金箔がひらひら落ちる          */
-  const FX_MODES = ['light', 'onibi', 'kitsunebi', 'inazuma', 'hashira', 'hotaru',
+  const FX_MODES = ['light', 'onibi', 'inazuma', 'hotaru',
                     'hanabira', 'kinpaku', 'honoo', 'aobi'];
   function currentFxMode() {
     const q = new URLSearchParams(location.search).get('fx');
@@ -712,9 +712,7 @@
     }
 
     if (mode === 'onibi')          { buildOnibi(P, W, H, cx, cy, theme); }
-    else if (mode === 'kitsunebi') { buildKitsunebi(P, W, H, cx, cy); }
     else if (mode === 'inazuma')   { buildInazuma(P, W, H, cx, cy, theme); }
-    else if (mode === 'hashira')   { buildHashira(P, W, H, cx, cy, theme); }
     else if (mode === 'hotaru')    { buildHotaru(P, W, H, cx, cy); }
     else if (mode === 'hanabira')  { buildHanabira(P, W, H); }
     else if (mode === 'kinpaku')   { buildKinpaku(P, W, H, cx, cy); }
@@ -789,37 +787,6 @@
     }
   }
 
-  /* ── ⑦ 狐火 ──
-     提灯行列のように、小さな炎が一つずつ順に灯っていく。 */
-  function buildKitsunebi(P, W, H, cx, cy) {
-    const FLAME = [255, 176, 66];
-    const PALE  = [255, 226, 150];
-    const N = 13;
-    for (let i = 0; i < N; i++) {
-      const u = i / (N - 1);
-      // ゆるやかな弧を描いて並ぶ
-      const ang = Math.PI * (0.12 + u * 0.76);
-      P.push({ kind: 'foxfire',
-               x0: cx + Math.cos(ang) * W * 0.46,
-               y0: cy + 40 + Math.sin(ang) * -H * 0.16,
-               x: 0, y: 0,
-               r: 9 + Math.random() * 7,
-               phase: Math.random() * Math.PI * 2,
-               bob: 0.05 + Math.random() * 0.04,
-               life: -i * 7,                       // 順に灯る
-               max: 120 + Math.random() * 40,
-               col: i % 3 === 0 ? PALE : FLAME });
-    }
-    // 灯のまわりに漂う粉
-    for (let i = 0; i < 24; i++) {
-      P.push({ kind: 'ember', x: Math.random() * W, y: cy + Math.random() * H * 0.45,
-               r: 1 + Math.random() * 2.6, vy: -0.3 - Math.random() * 0.5,
-               drift: (Math.random() - 0.5) * 0.4, phase: Math.random() * Math.PI * 2,
-               life: -Math.random() * 70, max: 110 + Math.random() * 60,
-               col: FLAME });
-    }
-  }
-
   /* ── ⑧ 稲妻 ──
      枝分かれする雷が走り、画面が白く光る。 */
   function makeBolt(x0, y0, x1, y1, offset, depth, out) {
@@ -839,7 +806,7 @@
                W * 0.42, 5, pts);
       // 枝
       const branches = [];
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < 4; k++) {
         const j = 2 + (Math.random() * (pts.length - 6) | 0);
         const b = [];
         makeBolt(pts[j][0], pts[j][1],
@@ -864,49 +831,29 @@
     }
   }
 
-  /* ── ⑨ 光柱 ──
-     天から一条の光が降り、塵が舞い上がる。 */
-  function buildHashira(P, W, H, cx, cy, theme) {
-    const GOLD = [255, 226, 140];
-    P.push({ kind: 'pillar', x: cx, w: W * 0.42, col: GOLD,
-             life: 0, max: 150 });
-    // 光条
-    for (let i = 0; i < 7; i++) {
-      P.push({ kind: 'ray', x: cx + (Math.random() - 0.5) * W * 0.34,
-               w: 8 + Math.random() * 26, col: GOLD,
-               phase: Math.random() * Math.PI * 2,
-               life: -Math.random() * 20, max: 130 + Math.random() * 30 });
-    }
-    // 舞い上がる塵
-    for (let i = 0; i < 52; i++) {
-      P.push({ kind: 'ember', x: cx + (Math.random() - 0.5) * W * 0.55,
-               y: cy + Math.random() * H * 0.5,
-               r: 0.9 + Math.random() * 2.6,
-               vy: -0.35 - Math.random() * 0.9,
-               drift: (Math.random() - 0.5) * 0.35,
-               phase: Math.random() * Math.PI * 2,
-               life: -Math.random() * 60, max: 115 + Math.random() * 60,
-               col: i % 4 === 0 ? theme : GOLD });
-    }
-  }
-
   /* ── ⑩ 蛍 ──
      淡い黄緑の光が、それぞれの間合いで明滅しながら漂う。 */
   function buildHotaru(P, W, H, cx, cy) {
     const LIME = [190, 255, 130];
-    const WARM = [236, 255, 170];
-    for (let i = 0; i < 34; i++) {
+    const WARM = [255, 246, 150];
+    const GOLD = [255, 216, 90];
+    const cols = [LIME, WARM, LIME, GOLD];
+    for (let i = 0; i < 64; i++) {
+      // 3割ほどは一斉に光る（本物の蛍も同調して明滅する）
+      const sync = Math.random() < 0.34;
       P.push({ kind: 'firefly',
                x: Math.random() * W,
-               y: cy - H * 0.2 + Math.random() * H * 0.8,
-               r: 3 + Math.random() * 4.5,
-               vy: -0.12 - Math.random() * 0.3,
-               drift: (Math.random() - 0.5) * 0.5,
+               y: cy - H * 0.3 + Math.random() * H * 0.95,
+               r: 4 + Math.random() * 7,
+               vy: -0.18 - Math.random() * 0.5,
+               drift: (Math.random() - 0.5) * 0.8,
                phase: Math.random() * Math.PI * 2,
-               blink: 0.045 + Math.random() * 0.055,   // 明滅の速さ
-               boff: Math.random() * Math.PI * 2,
-               life: -Math.random() * 50, max: 150 + Math.random() * 70,
-               col: i % 3 === 0 ? WARM : LIME });
+               blink: sync ? 0.062 : 0.05 + Math.random() * 0.07,
+               boff: sync ? 0 : Math.random() * Math.PI * 2,
+               sync,
+               trail: [],
+               life: -Math.random() * 45, max: 150 + Math.random() * 70,
+               col: cols[i % cols.length] });
     }
   }
 
@@ -1196,33 +1143,6 @@
           ctx.fillStyle = core;
           ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 2.4, 0, Math.PI * 2); ctx.fill();
 
-        } else if (p.kind === 'foxfire') {
-          p.phase += p.bob;
-          p.x = p.x0;
-          p.y = p.y0 + Math.sin(p.phase) * 9;
-          // 灯った直後にふわっと開く
-          const grow = Math.min(1, p.life / 12);
-          const a = grow * Math.min(1, (1 - t) * 3) * 0.95;
-          const rr = p.r * (0.6 + grow * 0.4);
-          // 外側の暈
-          const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rr * 4.2);
-          halo.addColorStop(0,   rgba(p.col, a * 0.5));
-          halo.addColorStop(0.4, rgba(p.col, a * 0.16));
-          halo.addColorStop(1,   rgba(p.col, 0));
-          ctx.fillStyle = halo;
-          ctx.beginPath(); ctx.arc(p.x, p.y, rr * 4.2, 0, Math.PI * 2); ctx.fill();
-          // 芯（縦にすこし伸ばして炎らしく）
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.scale(1, 1.45);
-          const core = ctx.createRadialGradient(0, 0, 0, 0, 0, rr);
-          core.addColorStop(0,    rgba([255, 255, 240], a));
-          core.addColorStop(0.45, rgba(p.col, a * 0.8));
-          core.addColorStop(1,    rgba(p.col, 0));
-          ctx.fillStyle = core;
-          ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.fill();
-          ctx.restore();
-
         } else if (p.kind === 'bolt') {
           const a = Math.pow(1 - t, 1.6);
           const stroke = (pts, wid, alpha) => {
@@ -1234,64 +1154,65 @@
             for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
             ctx.stroke();
           };
-          stroke(p.pts, 13, a * 0.16);   // 外側のにじみ
-          stroke(p.pts, 5,  a * 0.5);
-          stroke(p.pts, 1.7, a);         // 芯
-          p.branches.forEach(b => { stroke(b, 3, a * 0.32); stroke(b, 1, a * 0.7); });
+          stroke(p.pts, 46, a * 0.10);   // いちばん外の光
+          stroke(p.pts, 26, a * 0.20);   // 外側のにじみ
+          stroke(p.pts, 12, a * 0.55);
+          stroke(p.pts, 5.5, a);         // 芯
+          ctx.strokeStyle = rgba([255, 255, 255], a);   // 白く抜ける中心
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(p.pts[0][0], p.pts[0][1]);
+          for (let k = 1; k < p.pts.length; k++) ctx.lineTo(p.pts[k][0], p.pts[k][1]);
+          ctx.stroke();
+          p.branches.forEach(b => {
+            stroke(b, 14, a * 0.14);
+            stroke(b, 6,  a * 0.4);
+            stroke(b, 2.4, a * 0.9);
+          });
 
         } else if (p.kind === 'flash') {
-          const a = Math.pow(1 - t, 2.4) * 0.3;
+          const a = Math.pow(1 - t, 2.4) * 0.42;
           ctx.fillStyle = rgba(p.col, a);
           ctx.fillRect(0, 0, W, H);
 
-        } else if (p.kind === 'pillar') {
-          const a = Math.sin(Math.min(1, t * 1.25) * Math.PI) * 0.42;
-          const g = ctx.createLinearGradient(0, 0, 0, H);
-          g.addColorStop(0,    rgba(p.col, a));
-          g.addColorStop(0.55, rgba(p.col, a * 0.42));
-          g.addColorStop(1,    rgba(p.col, 0));
-          ctx.fillStyle = g;
-          // 上が細く下が広がる台形
-          ctx.beginPath();
-          ctx.moveTo(p.x - p.w * 0.22, 0);
-          ctx.lineTo(p.x + p.w * 0.22, 0);
-          ctx.lineTo(p.x + p.w * 0.72, H);
-          ctx.lineTo(p.x - p.w * 0.72, H);
-          ctx.closePath();
-          ctx.fill();
-
-        } else if (p.kind === 'ray') {
-          p.phase += 0.03;
-          const a = Math.sin(Math.min(1, t * 1.2) * Math.PI) * 0.3
-                  * (0.6 + Math.sin(p.phase) * 0.4);
-          const wid = p.w * (0.7 + Math.sin(p.phase * 0.7) * 0.3);
-          const g = ctx.createLinearGradient(0, 0, 0, H * 0.9);
-          g.addColorStop(0, rgba(p.col, a));
-          g.addColorStop(1, rgba(p.col, 0));
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.moveTo(p.x - wid * 0.3, 0);
-          ctx.lineTo(p.x + wid * 0.3, 0);
-          ctx.lineTo(p.x + wid, H * 0.9);
-          ctx.lineTo(p.x - wid, H * 0.9);
-          ctx.closePath();
-          ctx.fill();
-
         } else if (p.kind === 'firefly') {
-          p.phase += 0.03;
+          p.phase += 0.04;
           p.boff += p.blink;
           p.y += p.vy;
-          p.x += p.drift + Math.sin(p.phase) * 0.6;
-          // 明滅（消えている時間の方が長い）
-          const blink = Math.pow(Math.max(0, Math.sin(p.boff)), 2.6);
-          const a = blink * Math.sin(t * Math.PI) * 0.95;
+          p.x += p.drift + Math.sin(p.phase) * 0.9;
+          // 明滅。同調組はいっせいに強く光る
+          const raw = Math.max(0, Math.sin(p.boff));
+          const blink = Math.pow(raw, p.sync ? 1.7 : 2.3);
+          const a = blink * Math.sin(t * Math.PI) * (p.sync ? 1 : 0.9);
+
+          // 光りながら動いた跡を残す
+          p.trail.unshift({ x: p.x, y: p.y, a });
+          if (p.trail.length > 8) p.trail.pop();
+          for (let k = 1; k < p.trail.length; k++) {
+            const q = p.trail[k];
+            const fa = q.a * (1 - k / p.trail.length) * 0.32;
+            if (fa < 0.01) continue;
+            const rr = p.r * 2.4 * (1 - k / p.trail.length);
+            const tg = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, rr);
+            tg.addColorStop(0, rgba(p.col, fa));
+            tg.addColorStop(1, rgba(p.col, 0));
+            ctx.fillStyle = tg;
+            ctx.beginPath(); ctx.arc(q.x, q.y, rr, 0, Math.PI * 2); ctx.fill();
+          }
+
           if (a > 0.01) {
-            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-            g.addColorStop(0,    rgba([255, 255, 235], a));
-            g.addColorStop(0.28, rgba(p.col, a * 0.7));
+            // 大きな暈
+            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
+            g.addColorStop(0,    rgba([255, 255, 240], a));
+            g.addColorStop(0.18, rgba(p.col, a * 0.85));
+            g.addColorStop(0.45, rgba(p.col, a * 0.3));
             g.addColorStop(1,    rgba(p.col, 0));
             ctx.fillStyle = g;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2); ctx.fill();
+            // 強く光った瞬間だけ十字の光条が伸びる
+            if (a > 0.6) {
+              drawFlare(ctx, p.x, p.y, p.r * 5.5 * a, 0, p.col, (a - 0.6) * 2.2);
+            }
           }
 
         } else if (p.kind === 'petal') {
