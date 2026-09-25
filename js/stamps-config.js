@@ -1,118 +1,91 @@
 /**
  * スタンプラリー設定ファイル
- * 各スタンプのスポット名・説明・3Dモデルパスなどを定義する。
- * キャラクター名やスポット情報はここだけ変更すれば全体に反映される。
  *
- * ── モデルについて ──
- * model: Blenderで作った.glbファイルのパス。
- *        ファイルが存在しない場合は placeholder の形状が表示される。
- * placeholder: .glbが未準備のときにARに表示する仮の3D形状設定。
+ * スポット番号 = id です。QRコードを現地に貼るときに取り違えないよう、
+ * 必ず id とスポット番号を一致させたまま運用してください。
+ *
+ *   id:1 蚤の市通りの北     → 烏天狗
+ *   id:2 蚤の市通りの南     → 土蜘蛛
+ *   id:3 みずほ銀行奥       → 青鬼
+ *   id:4 山車会館前広場     → 百目
+ *   id:5 流動（妖怪の背中） → 河童
+ *
+ * spot  … 設置場所の名前（スタンプ帳に表示）
+ * hint  … まだ取っていない人に見せる道案内（謎解きではなく実用重視）
+ * fx    … 獲得時の演出。5か所とも同じだと途中で飽きるため妖怪ごとに変える
+ *         （light=光 / onibi=鬼火 / inazuma=稲妻 / hotaru=蛍 / kinpaku=金箔）
+ * emoji … 画像が読み込めなかったときの代わりに表示する
+ * color … 演出の光やボタンに使う色
  */
 
 const STAMPS_CONFIG = [
   {
     id: 1,
-    name: 'スポット1',
-    subtitle: '最初のスタンプ',
-    description: 'ここでスタンプを集めてスタートしよう！',
-    model: 'assets/models/character1.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#FF6B6B',
-    emoji: '🌟',
-    // ── プレースホルダー（仮オブジェクト）設定 ──
-    placeholder: {
-      shape: 'a-box',           // A-Frame プリミティブタグ名
-      color: '#FF6B6B',
-      scale: '0.45 0.45 0.45',
-      position: '0 0.3 0',
-      label: '立方体',
-    },
+    name: '烏天狗',
+    subtitle: '烏天狗をゲット！',
+    description: '山から下りてきた笛の名手。翼をたたんで、今日は静かに一曲。',
+    image: './assets/tengu.webp',
+    color: '#2C5AA0',
+    emoji: '👺',
+    speech: 'よう来たな。笛の音が聞こえたか',
+    spot: '蚤の市通りの北',
+    hint: '蚤の市通りを北の端まで進め',
+    fx: 'light',      // 最初の1体。明るく歓迎する
   },
   {
     id: 2,
-    name: 'スポット2',
-    subtitle: '2つ目のスタンプ',
-    description: 'ここで不思議なキャラクターに出会える！',
-    model: 'assets/models/character2.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#4ECDC4',
-    emoji: '🌊',
-    placeholder: {
-      shape: 'a-sphere',
-      color: '#4ECDC4',
-      scale: '0.35 0.35 0.35',
-      position: '0 0.35 0',
-      label: '球体',
-    },
+    name: '土蜘蛛',
+    subtitle: '土蜘蛛をゲット！',
+    description: '八本の脚で太鼓を抱える古い妖怪。打ち鳴らす音で夜を知らせる。',
+    image: './assets/tsuchigumo.webp',
+    color: '#8B6FB0',
+    emoji: '🕷️',
+    speech: 'わしの太鼓、聞いていくかい',
+    spot: '蚤の市通りの南',
+    hint: '同じ通りを、今度は南のはずれまで',
+    fx: 'onibi',      // 妖しい雰囲気に合わせて鬼火
   },
   {
     id: 3,
-    name: 'スポット3',
-    subtitle: '3つ目のスタンプ',
-    description: 'このキャラクターは特別な技を持っているよ！',
-    model: 'assets/models/character3.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#FFE66D',
-    emoji: '⚡',
-    placeholder: {
-      shape: 'a-cone',
-      color: '#FFE66D',
-      scale: '0.4 0.6 0.4',
-      position: '0 0.35 0',
-      label: 'コーン',
-    },
+    name: '青鬼',
+    subtitle: '青鬼をゲット！',
+    description: '十千木でいちばん大きな妖怪。見た目は怖いが、根はやさしい。',
+    image: './assets/aooni.webp',
+    color: '#C0442A',
+    emoji: '👹',
+    speech: 'おう、よう見つけたな！',
+    spot: 'みずほ銀行奥',
+    hint: 'みずほ銀行の裏手、奥にひそむ',
+    fx: 'inazuma',    // 一番行ってほしい場所なので、一番派手な演出
   },
   {
     id: 4,
-    name: 'スポット4',
-    subtitle: '4つ目のスタンプ',
-    description: '森の奥深くに潜む神秘的な存在！',
-    model: 'assets/models/character4.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#A8E6CF',
-    emoji: '🌿',
-    placeholder: {
-      shape: 'a-cylinder',
-      color: '#A8E6CF',
-      scale: '0.25 0.55 0.25',
-      position: '0 0.35 0',
-      label: '円柱',
-    },
+    name: '百目',
+    subtitle: '百目をゲット！',
+    description: '数えきれない目で祭りを見物する陽気な妖怪。踊り出すと止まらない。',
+    image: './assets/hyakume.webp',
+    color: '#5E8C3A',
+    emoji: '👁️',
+    speech: 'どの目で見ても、お前さんが見えるわい',
+    spot: '山車会館前広場',
+    hint: '山車会館の前の広場を探せ',
+    fx: 'hotaru',     // 広場でのんびり。やわらかい蛍
   },
   {
     id: 5,
-    name: 'スポット5',
-    subtitle: 'ラストスタンプ',
-    description: '全スタンプ制覇おめでとう！最後の伝説のキャラクター！',
-    model: 'assets/models/character5.glb',
-    modelScale: '0.5 0.5 0.5',
-    modelPosition: '0 0 0',
-    modelRotation: '0 0 0',
-    color: '#C9B1FF',
-    emoji: '👑',
-    placeholder: {
-      shape: 'a-torus',
-      color: '#C9B1FF',
-      scale: '0.35 0.35 0.35',
-      position: '0 0.35 0',
-      label: 'トーラス',
-    },
+    name: '河童',
+    subtitle: '河童をゲット！',
+    description: '皿の水をこぼさぬよう、のんびり歩く。きゅうりを持たせると喜ぶ。',
+    image: './assets/kappa.webp',
+    color: '#2F7D62',
+    emoji: '🥒',
+    speech: 'きゅうり…食うか？',
+    spot: '会場のどこか（歩いています）',
+    hint: '会場を歩く妖怪の背中を見よ',
+    fx: 'kinpaku',    // 見つけにくいので金箔でレア感
   },
 ];
 
-/**
- * IDでスタンプ設定を取得する
- * @param {number} id - スタンプID (1〜5)
- * @returns {object|null}
- */
 function getStampById(id) {
   return STAMPS_CONFIG.find((s) => s.id === Number(id)) || null;
 }

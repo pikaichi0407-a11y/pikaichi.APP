@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0d1a" />
+  <title>QRスキャン - スタンプラリー</title>
+  <!-- QR読取ライブラリ。アプリ内カメラでスキャンする時だけ必要なので defer で非同期に。
+       標準カメラから ?id= で来た場合はこれを待たずに画面が出る（電波が悪い会場対策） -->
+  <script defer src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+      background: #0d0d1a;
+      color: white;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    .phase {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .phase.hidden { display: none; }
+
+    #phase-scan {
+      background: #0d0d1a;
+      justify-content: flex-start;
+    }
+
+    .scan-header {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .scan-header h1 { font-size: 1.1rem; font-weight: 700; }
+    .scan-header p  { font-size: 0.8rem; opacity: 0.6; margin-top: 4px; }
+
+    .scan-body {
+      flex: 1;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .viewfinder {
+      width: 100%;
+      max-width: 300px;
+      aspect-ratio: 1;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: #1a1a2e;
+      box-shadow: 0 0 40px rgba(92,107,192,0.3);
+    }
+    #qr-reader { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #qr-reader select,
+    #qr-reader__header_message,
+    #qr-reader__dashboard_section_swaplink { display: none !important; }
+    #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+
+    #vf-placeholder {
+      position: absolute; inset: 0; z-index: 5;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; background: #1a1a2e;
+    }
+    .ph-icon { font-size: 3.5rem; }
+    #vf-placeholder p { font-size: 0.85rem; color: rgba(255,255,255,0.45); }
+
+    .corner-frame {
+      position: absolute; inset: 0; z-index: 10;
+      pointer-events: none; display: none;
+    }
+    .corner-frame::before,.corner-frame::after,
+    .corner-frame > span::before,.corner-frame > span::after {
+      content: ''; position: absolute;
+      width: 28px; height: 28px;
+      border-color: white; border-style: solid;
+    }
+    .corner-frame::before  { top:12px; left:12px;  border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+    .corner-frame::after   { top:12px; right:12px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+    .corner-frame > span::before { bottom:12px; left:12px;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+    .corner-frame > span::after  { bottom:12px; right:12px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+    #scan-line {
+      position: absolute; left:20px; right:20px; height:2px;
+      background: linear-gradient(90deg, transparent, #5C6BC0, white, #5C6BC0, transparent);
+      animation: scanMove 2s ease-in-out infinite;
+      z-index: 11; display: none;
+    }
+    @keyframes scanMove { 0%,100%{ top:15%; } 50%{ top:80%; } }
+
+    .status-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 999px;
+      font-size: 0.88rem; font-weight: 700;
+      min-width: 240px; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white; background: rgba(255,255,255,0.07);
+    }
+    .status-pill.scanning { background:rgba(92,107,192,0.25); border-color:rgba(92,107,192,0.5); }
+    .status-pill.success  { background:rgba(46,125,50,0.35);  border-color:#66BB6A; }
+    .status-pill.error    { background:rgba(198,40,40,0.3);   border-color:#EF5350; }
+    .pulse-dot {
+      width:8px; height:8px; border-radius:50%; background:#7986CB;
+      animation: pdp 1.2s ease-in-out infinite;
+    }
+    @keyframes pdp { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    #btn-start {
+      background: #5C6BC0; color: white; border: none;
+      border-radius: 999px; padding: 15px 0;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      width: 100%; max-width: 280px;
+      box-shadow: 0 4px 20px rgba(92,107,192,0.5);
+    }
+    #btn-start:active { background: #3949AB; transform: scale(0.97); }
+
+    .back-link {
+      color: rgba(255,255,255,0.45); font-size: 0.85rem;
+      text-decoration: none; padding: 8px;
+    }
+
+    #phase-image {
+      background: #0d0d1a;
+      justify-content: space-between;
+      padding: max(24px, env(safe-area-inset-top)) 0
+               max(24px, env(safe-area-inset-bottom));
+    }
+
+    .image-top {
+      width: 100%;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .image-top .stamp-no {
+      font-size: 0.78rem;
+      opacity: 0.5;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .char-img-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      width: 100%;
+      position: relative;
+    }
+
+    /* ── 当たり演出：後光（回転する光線） ── */
+    .burst {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 150vmax; height: 150vmax;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      background: repeating-conic-gradient(
+        from 0deg at 50% 50%,
+        var(--ray, #FFD700) 0deg 5deg,
+        transparent 5deg 16deg
+      );
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 8%, transparent 52%);
+      mask-image: radial-gradient(circle at 50% 50%, #000 8%, transparent 52%);
+      animation: burstIn 0.55s ease-out 0.05s forwards,
+                 spin 26s linear infinite;
+    }
+    @keyframes burstIn {
+      from { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
+      to   { opacity: 0.30; transform: translate(-50%,-50%) scale(1); }
+    }
+    @keyframes spin {
+      to { transform: translate(-50%,-50%) rotate(360deg); }
+    }
+
+    /* ── 当たり演出：中央の光のにじみ ── */
+    .glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: min(92vw, 460px); height: min(92vw, 460px);
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(circle,
+        var(--glow, #5C6BC0) 0%,
+        transparent 68%);
+      opacity: 0;
+      animation: glowIn 0.7s ease-out forwards;
+    }
+    @keyframes glowIn {
+      from { opacity: 0;    transform: translate(-50%,-50%) scale(0.6); }
+      to   { opacity: 0.55; transform: translate(-50%,-50%) scale(1); }
+    }
+
+    /* ── デモ表示中のバッジ ── */
+    #demo-badge {
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 193, 7, 0.92);
+      color: #2A1400;
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      padding: 3px 14px;
+      border-radius: 999px;
+      z-index: 50;
+      pointer-events: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    #demo-badge.hidden { display: none; }
+
+    /* ── 当たり演出：パーティクル（Canvasで描画） ── */
+    #fx-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .char-img-wrap {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #char-image {
+      max-width: min(90vw, 400px);
+      max-height: 52vh;
+      object-fit: contain;
+      border-radius: 20px;
+      filter: drop-shadow(0 8px 32px rgba(0,0,0,0.5));
+      animation: charIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: block;
+    }
+    @keyframes charIn {
+      from { transform: scale(0.7) translateY(30px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
+    }
+
+    #char-emoji-fallback {
+      font-size: 8rem;
+      line-height: 1.2;
+      display: none;
+      filter: drop-shadow(0 8px 32px rgba(0,0,0,0.5));
+      animation: charIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .speech-bubble {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 10, 24, 0.78);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 999px;
+      padding: 8px 22px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-align: center;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      animation: bubbleIn 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+    }
+    .speech-bubble.hidden { display: none; }
+    @keyframes bubbleIn {
+      from { transform: translateX(-50%) scale(0.8) translateY(6px); opacity: 0; }
+      to   { transform: translateX(-50%) scale(1)   translateY(0);   opacity: 1; }
+    }
+
+    .image-bottom {
+      width: 100%;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      z-index: 3;
+    }
+
+    /* 「妖怪をゲット！」の帯 */
+    .get-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #FFE066, #FFB300, #FF8C00);
+      color: #2A1400;
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      padding: 4px 20px;
+      border-radius: 999px;
+      box-shadow: 0 4px 16px rgba(255,180,0,0.45);
+      animation: badgePop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.45s both;
+    }
+    @keyframes badgePop {
+      from { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+      to   { transform: scale(1)   rotate(0deg);   opacity: 1; }
+    }
+
+    #img-char-name {
+      font-size: clamp(1.7rem, 8vw, 2.3rem);
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+      background: linear-gradient(180deg, #FFF6D5 0%, #FFD24A 55%, #F0A000 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 10px rgba(0,0,0,0.6));
+      animation: nameIn 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.6s both;
+    }
+    @keyframes nameIn {
+      from { transform: scale(0.55) translateY(18px); opacity: 0; }
+      to   { transform: scale(1)    translateY(0);    opacity: 1; }
+    }
+
+    #img-char-sub {
+      font-size: 0.88rem;
+      opacity: 0.75;
+      text-align: center;
+      margin-bottom: 4px;
+      animation: fadeUp 0.5s ease-out 0.85s both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 0.75; transform: translateY(0); }
+    }
+
+    #btn-stamp-get {
+      width: 100%; max-width: 320px;
+      background: #5C6BC0;
+      color: white; border: none;
+      border-radius: 999px;
+      padding: 16px;
+      font-size: 1.05rem; font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 24px rgba(92,107,192,0.5);
+      transition: transform 0.15s, background 0.2s;
+      animation: fadeUp2 0.5s ease-out 1s both;
+    }
+    @keyframes fadeUp2 {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    #btn-stamp-get:active { transform: scale(0.96); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .burst, .glow, .get-badge,
+      #img-char-name, #img-char-sub, #btn-stamp-get,
+      #char-image, .speech-bubble {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    #phase-complete {
+      background: #f5f5f5;
+      color: #212121;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .confetti-area {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      border-radius: 2px;
+      animation: confetti-fall linear forwards;
+    }
+    @keyframes confetti-fall {
+      0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    .complete-card {
+      position: relative; z-index: 1;
+      background: white;
+      border-radius: 28px;
+      padding: 32px 24px 28px;
+      margin: 20px;
+      max-width: 380px;
+      width: calc(100% - 40px);
+      text-align: center;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.12);
+      animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes cardIn {
+      from { transform: scale(0.8) translateY(20px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);    opacity: 1; }
+    }
+
+    .complete-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #FFD700, #FF8C00);
+      color: white;
+      font-size: 0.85rem; font-weight: 900;
+      padding: 5px 20px; border-radius: 999px;
+      margin-bottom: 16px;
+      letter-spacing: 0.06em;
+    }
+    .complete-badge.already {
+      background: linear-gradient(135deg, #78909C, #546E7A);
+    }
+
+    .complete-char-img {
+      width: 140px; height: 140px;
+      object-fit: contain;
+      margin: 0 auto 12px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+    }
+    .complete-emoji-fallback {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+
+    .complete-name { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; color: #212121; }
+    .complete-sub  { font-size: 0.88rem; color: #757575; margin-bottom: 20px; }
+
+    .btn-to-list {
+      display: block; width: 100%;
+      background: #5C6BC0; color: white;
+      border: none; border-radius: 999px;
+      padding: 14px; font-size: 0.95rem; font-weight: 700;
+      text-align: center; text-decoration: none;
+      cursor: pointer; margin-bottom: 10px;
+      box-shadow: 0 4px 12px rgba(92,107,192,0.35);
+    }
+    .btn-next-scan {
+      display: block; width: 100%;
+      background: white; color: #5C6BC0;
+      border: 2px solid #5C6BC0; border-radius: 999px;
+      padding: 12px; font-size: 0.95rem; font-weight: 700;
+      text-align: center; cursor: pointer;
+    }
+    .btn-to-list:active  { opacity: 0.85; }
+    .btn-next-scan:active { background: #f0f4ff; }
+    /* ========================================
+       全妖怪コンプリート（レア演出）
+       ======================================== */
+    #phase-all {
+      background: radial-gradient(ellipse at 50% 40%, #2a1650 0%, #0b0818 62%);
+      justify-content: center;
+      overflow: hidden;
+    }
+    #all-canvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 1;
+    }
+    #all-rays {
+      position: absolute; top: 42%; left: 50%;
+      width: 190vmax; height: 190vmax;
+      transform: translate(-50%,-50%);
+      pointer-events: none; z-index: 0; opacity: 0;
+      background: repeating-conic-gradient(from 0deg at 50% 50%,
+        #FFD75E 0deg 4deg, transparent 4deg 14deg);
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 5%, transparent 46%);
+      mask-image: radial-gradient(circle at 50% 50%, #000 5%, transparent 46%);
+      animation: allRaysIn 1s ease-out 0.1s forwards, spin 34s linear infinite;
+    }
+    @keyframes allRaysIn {
+      from { opacity: 0; transform: translate(-50%,-50%) scale(0.4); }
+      to   { opacity: 0.26; transform: translate(-50%,-50%) scale(1); }
+    }
+    .all-inner {
+      position: relative; z-index: 2; width: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 16px;
+    }
+    /* 横並びにして重なりを防ぐ。絶対配置だと画面幅によって重なるため */
+    .all-stage {
+      width: 100%; max-width: 430px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 1.5%;
+      margin-bottom: 10px;
+      min-height: 190px;
+    }
+    .all-char {
+      flex: 0 0 auto;
+      transform-origin: bottom center;
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,0.7));
+      opacity: 0;
+      animation: charRise 0.65s cubic-bezier(0.34,1.56,0.64,1) both;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .all-char img {
+      width: 100%; height: auto; display: block;
+      max-height: 34vh; object-fit: contain;
+    }
+    .all-char .fb { font-size: 2.4rem; }
+    @keyframes charRise {
+      from { opacity: 0; transform: translateY(44px) scale(0.72); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .all-title {
+      font-size: 0.74rem; letter-spacing: 0.3em;
+      color: #FFD75E; font-weight: 800;
+      animation: fadeUp 0.6s ease-out 1.5s both;
+    }
+    .all-main {
+      font-size: clamp(1.7rem, 7.5vw, 2.3rem);
+      font-weight: 900; letter-spacing: 0.05em;
+      text-align: center; line-height: 1.3; margin-top: 2px;
+      background: linear-gradient(180deg, #FFFBE6 0%, #FFD24A 52%, #E89000 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 12px rgba(0,0,0,0.7));
+      animation: nameIn 0.7s cubic-bezier(0.34,1.56,0.64,1) 1.7s both;
+    }
+    .all-sub {
+      font-size: 0.84rem; color: #E6D9FF; opacity: 0.85;
+      margin-top: 8px; text-align: center; line-height: 1.7;
+      animation: fadeUp 0.6s ease-out 2.1s both;
+    }
+    .all-actions {
+      width: 100%; max-width: 330px; margin-top: 18px;
+      display: flex; flex-direction: column; gap: 9px;
+      animation: fadeUp 0.6s ease-out 2.4s both;
+    }
+    .all-actions a, .all-actions button {
+      display: block; width: 100%; text-align: center;
+      border: none; border-radius: 999px;
+      padding: 14px; font-size: 0.95rem; font-weight: 800;
+      cursor: pointer; text-decoration: none; font-family: inherit;
+    }
+    .all-primary {
+      background: linear-gradient(135deg, #FFD75E, #F0960E);
+      color: #2A1400; box-shadow: 0 6px 24px rgba(240,150,14,0.45);
+    }
+    .all-secondary {
+      background: rgba(255,255,255,0.09); color: #EDE9FE;
+      border: 1px solid rgba(255,255,255,0.22) !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #all-rays, .all-char, .all-title, .all-main, .all-sub, .all-actions {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<script>
+  /* QRから直接来た場合（?id=）は、カメラ画面が一瞬映らないよう
+     DOMContentLoaded を待たずに即座に隠す */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (!p.get('id')) return;
+    document.addEventListener('readystatechange', function () {
+      var el = document.getElementById('phase-scan');
+      if (el) el.classList.add('hidden');
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('phase-scan');
+      if (el) el.classList.add('hidden');
+    });
+  })();
+</script>
+
+<div id="phase-scan" class="phase">
+  <header class="scan-header">
+    <h1>&#128247; QRコードをスキャン</h1>
+    <p>スタンプのQRコードにカメラを向けてください</p>
+  </header>
+  <div class="scan-body">
+    <div class="viewfinder">
+      <div id="qr-reader"></div>
+      <div id="vf-placeholder">
+        <div class="ph-icon">&#128247;</div>
+        <p>「スキャン開始」を押してください</p>
+      </div>
+      <div class="corner-frame" id="corner-frame"><span></span></div>
+      <div id="scan-line"></div>
+    </div>
+    <div class="status-pill" id="status-pill">QRコードを読み取ります</div>
+    <button id="btn-start" onclick="startScan()">&#128247; スキャン開始</button>
+    <a href="index.html" class="back-link">&#8592; スタンプ帳に戻る</a>
+  </div>
+</div>
+
+<div id="phase-image" class="phase hidden">
+  <canvas id="fx-canvas"></canvas>
+  <div id="demo-badge" class="hidden">DEMO / 見本</div>
+  <div class="image-top">
+    <p class="stamp-no" id="img-stamp-no">STAMP #1</p>
+  </div>
+  <div class="char-img-area">
+    <div class="burst" id="burst"></div>
+    <div class="glow"  id="glow"></div>    <div class="char-img-wrap">
+      <img id="char-image" src="" alt="" />
+      <span id="char-emoji-fallback"></span>
+      <div class="speech-bubble hidden" id="speech-bubble">
+        <p id="speech-text"></p>
+      </div>
+    </div>
+  </div>
+  <div class="image-bottom">
+    <span class="get-badge">妖怪をゲット！</span>
+    <p id="img-char-name"></p>
+    <p id="img-char-sub"></p>
+    <button id="btn-stamp-get" onclick="showCompletePhase()">
+      &#127881; スタンプ帳に押す
+    </button>
+  </div>
+</div>
+
+<div id="phase-complete" class="phase hidden">
+  <div class="confetti-area" id="confetti-area"></div>
+  <div class="complete-card">
+    <div class="complete-badge" id="complete-badge">&#127881; スタンプGET！</div>
+    <img id="complete-char-img" class="complete-char-img" src="" alt=""
+         onerror="this.style.display='none'; document.getElementById('complete-emoji-fb').style.display='block';" />
+    <span id="complete-emoji-fb" class="complete-emoji-fallback" style="display:none;"></span>
+    <p class="complete-name" id="complete-name"></p>
+    <p class="complete-sub"  id="complete-sub"></p>
+    <a href="index.html" class="btn-to-list">&#127381; スタンプ帳を見る</a>
+    <button class="btn-next-scan" id="btn-next" onclick="resetToScan()">&#128247; 次のQRをスキャン</button>
+  </div>
+</div>
+
+
+<!-- ===== 全妖怪コンプリート（レア） ===== -->
+<div id="phase-all" class="phase hidden">
+  <div id="all-rays"></div>
+  <canvas id="all-canvas"></canvas>
+  <div class="all-inner">
+    <div class="all-stage" id="all-stage"></div>
+    <p class="all-title">ALL YOKAI COMPLETE</p>
+    <p class="all-main">百鬼夜行<br>コンプリート！</p>
+    <p class="all-sub">五体の妖怪がすべて揃いました<br>本部テントで景品とお引き換えください</p>
+    <div class="all-actions">
+      <a class="all-primary" href="index.html" id="all-to-book">&#127381; スタンプ帳を見る</a>
+      <button class="all-secondary" id="all-replay">&#10022; もう一度見る</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/stamps-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  let scanner  = null;
+  let active   = false;
+  let lastErrT = 0;
+  let curStamp = null;
+  let curIsNew = false;
+
+  function setStatus(text, type) {
+    const el = document.getElementById('status-pill');
+    el.className = 'status-pill' + (type ? ' ' + type : '');
+    el.innerHTML = type === 'scanning'
+      ? `<span class="pulse-dot"></span><span>${text}</span>`
+      : text;
+  }
+
+  function startScan() {
+    if (typeof Html5Qrcode === 'undefined') {
+      setStatus('&#9888;&#65039; 読み込み中です。少し待って再度お試しください', 'error');
+      return;
+    }
+    document.getElementById('btn-start').style.display = 'none';
+    setStatus('カメラを起動中...', '');
+    scanner = new Html5Qrcode('qr-reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1 },
+      onScanSuccess,
+      () => {}
+    ).then(() => {
+      active = true;
+      document.getElementById('vf-placeholder').style.display = 'none';
+      document.getElementById('corner-frame').style.display   = 'block';
+      document.getElementById('scan-line').style.display      = 'block';
+      setStatus('スキャン中... QRコードに向けてください', 'scanning');
+    }).catch(() => {
+      document.getElementById('btn-start').style.display = 'block';
+      setStatus('&#9888;&#65039; カメラを起動できません。許可してください', 'error');
+    });
+  }
+
+  function onScanSuccess(text) {
+    if (!active) return;
+    let stampId = null;
+    try {
+      const url = new URL(text);
+      if (url.pathname.includes('ar.html') || url.pathname.includes('stamp.html')) {
+        stampId = url.searchParams.get('id');
+      }
+    } catch {
+      const m = text.match(/(?:ar|stamp)\.html\?(?:.*&)?id=(\d+)/);
+      if (m) stampId = m[1];
+    }
+    const id = Number(stampId);
+    if (id >= 1 && id <= 5) {
+      active = false;
+      scanner.stop().catch(() => {});
+      showImagePhase(id);
+    } else {
+      const now = Date.now();
+      if (now - lastErrT > 2500) {
+        lastErrT = now;
+        setStatus('&#9888;&#65039; スタンプ用QRコードではありません', 'error');
+        setTimeout(() => {
+          if (active) setStatus('スキャン中... QRコードに向けてください', 'scanning');
+        }, 2500);
+      }
+    }
+  }
+
+  function showImagePhase(id) {
+    curStamp = STAMPS_CONFIG.find(s => s.id === id);
+    if (!curStamp) return;
+    curIsNew = collectStamp(id);
+
+    const bubble = document.getElementById('speech-bubble');
+    bubble.classList.add('hidden');
+    void bubble.offsetWidth;
+    if (curStamp.speech) {
+      document.getElementById('speech-text').textContent = '「' + curStamp.speech + '」';
+      bubble.classList.remove('hidden');
+    }
+
+    const emojiEl = document.getElementById('char-emoji-fallback');
+    emojiEl.style.display = 'none';
+    emojiEl.textContent   = '';
+
+    const imgEl = document.getElementById('char-image');
+    imgEl.style.display = '';
+    imgEl.src = curStamp.image;
+    imgEl.alt = curStamp.name;
+    imgEl.onerror = () => {
+      if (!curStamp) return;
+      imgEl.style.display   = 'none';
+      emojiEl.textContent   = curStamp.emoji;
+      emojiEl.style.display = 'block';
+    };
+
+    document.getElementById('img-stamp-no').textContent  = curStamp.spot
+      ? `STAMP #${curStamp.id}　${curStamp.spot}`
+      : `STAMP #${curStamp.id}`;
+    document.getElementById('img-char-name').textContent = curStamp.name;
+    document.getElementById('img-char-sub').textContent  = curStamp.subtitle;
+    document.getElementById('btn-stamp-get').style.background = curStamp.color;
+    document.getElementById('btn-stamp-get').style.boxShadow  = `0 6px 24px ${curStamp.color}55`;
+    document.getElementById('phase-image').style.background   =
+      `radial-gradient(ellipse at 50% 42%, ${curStamp.color}33 0%, #0d0d1a 62%)`;
+
+    document.getElementById('phase-scan').classList.add('hidden');
+    document.getElementById('phase-image').classList.remove('hidden');
+
+    // 当たり演出は画面を表示してから。非表示のままだと Canvas の
+    // 幅・高さが 0 になり、パーティクルが描画されない
+    requestAnimationFrame(() => playRevealFX());
+  }
+
+  /* ────────────────────────────────────────
+     当たり演出：後光・光のにじみ・舞い上がるキラキラ
+  ──────────────────────────────────────── */
+  function playRevealFX() {
+    const burst  = document.getElementById('burst');
+    const glow   = document.getElementById('glow');
+    const badge  = document.querySelector('.get-badge');
+    const nameEl = document.getElementById('img-char-name');
+    const subEl  = document.getElementById('img-char-sub');
+    const btnEl  = document.getElementById('btn-stamp-get');
+
+    // 光をキャラクターの色に合わせる
+    burst.style.setProperty('--ray',  curStamp.color);
+    glow.style.setProperty('--glow',  curStamp.color);
+
+    // アニメーションを頭から再生し直す（2体目以降も演出が出るように）
+    [burst, glow, badge, nameEl, subEl, btnEl,
+     document.getElementById('char-image'),
+     document.getElementById('char-emoji-fallback')].forEach(el => {
+      if (!el) return;
+      const a = el.style.animation;
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = a || '';
+    });
+
+    // パーティクルを打ち上げる
+    launchParticles(curStamp.color);
+  }
+
+  /* ────────────────────────────────────────
+     パーティクル演出（Canvas）
+     ・放射状の光の筋
+     ・4条のレンズフレア（キラッと瞬く星）
+     ・ゆらゆら昇る光の粒
+  ──────────────────────────────────────── */
+  let fxRAF = null;
+
+  /* 演出の種類。?fx= で切り替えて見比べられる
+     light … 光とレンズフレア（既定）
+     onibi … 鬼火・人魂がゆらめく
+     hanabira … 花びらが舞う
+     kinpaku … 金箔がひらひら落ちる          */
+  const FX_MODES = ['light', 'onibi', 'inazuma', 'hotaru',
+                    'hanabira', 'kinpaku', 'honoo', 'aobi'];
+  function currentFxMode() {
+    // ?fx= が付いていれば、それを優先（見比べ・確認用）
+    const q = new URLSearchParams(location.search).get('fx');
+    if (q) {
+      if (FX_MODES.includes(q)) return q;
+      const n = Number(q);
+      if (FX_MODES[n - 1]) return FX_MODES[n - 1];
+    }
+    // 通常は妖怪ごとに決めた演出を使う
+    if (curStamp && FX_MODES.includes(curStamp.fx)) return curStamp.fx;
+    return 'light';
+  }
+
+  function launchParticles(themeColor) {
+    const cv = document.getElementById('fx-canvas');
+    if (!cv) return;
+
+    // 動きを減らす設定の端末では演出しない
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    if (fxRAF) cancelAnimationFrame(fxRAF);
+    const ctx = cv.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = cv.clientWidth, H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const cx = W / 2, cy = H * 0.42;
+    const GOLD = [255, 214, 92];
+    const WHITE = [255, 250, 235];
+    const theme = hexToRGB(themeColor) || [120, 160, 255];
+    const palette = [GOLD, WHITE, GOLD, theme];
+    const mode = currentFxMode();
+
+    const P = [];
+
+    // 炎は粒を散らす方式では質感が出ないため、熱の伝播を計算して描く
+    if (mode === 'honoo' || mode === 'aobi') {
+      runFireLoop(ctx, W, H, mode === 'aobi' ? 'blue' : 'red');
+      return;
+    }
+
+    if (mode === 'onibi')          { buildOnibi(P, W, H, cx, cy, theme); }
+    else if (mode === 'inazuma')   { buildInazuma(P, W, H, cx, cy, theme); }
+    else if (mode === 'hotaru')    { buildHotaru(P, W, H, cx, cy); }
+    else if (mode === 'hanabira')  { buildHanabira(P, W, H); }
+    else if (mode === 'kinpaku')   { buildKinpaku(P, W, H, cx, cy); }
+    else { buildLight(P, W, H, cx, cy, palette, GOLD, WHITE); }
+
+    runFxLoop(ctx, W, H, P, mode);
+  }
+
+  /* ── ① 光とレンズフレア ── */
+  function buildLight(P, W, H, cx, cy, palette, GOLD, WHITE) {
+    // 放射状の光の筋（一瞬で散る）
+    for (let i = 0; i < 26; i++) {
+      const a = (Math.PI * 2 * i) / 26 + Math.random() * 0.2;
+      const sp = 7 + Math.random() * 9;
+      P.push({ kind: 'streak', x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+               len: 26 + Math.random() * 46, life: 0, max: 26 + Math.random() * 14,
+               col: palette[i % palette.length], w: 1.4 + Math.random() * 1.8 });
+    }
+
+    // ② レンズフレア（キラッと瞬く4条の星）
+    for (let i = 0; i < 20; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 40 + Math.random() * 190;
+      P.push({ kind: 'star', x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d * 0.85,
+               r: 9 + Math.random() * 26, rot: Math.random() * Math.PI,
+               spin: (Math.random() - 0.5) * 0.05,
+               life: -Math.random() * 34, max: 52 + Math.random() * 40,
+               col: Math.random() < 0.62 ? GOLD : WHITE,
+               vy: -0.24 - Math.random() * 0.5 });
+    }
+
+    // ③ ゆらゆら昇る光の粒
+    for (let i = 0; i < 46; i++) {
+      P.push({ kind: 'ember', x: cx + (Math.random() - 0.5) * W * 0.92,
+               y: cy + 40 + Math.random() * H * 0.42,
+               r: 1.6 + Math.random() * 4.4,
+               vy: -0.5 - Math.random() * 1.5,
+               drift: (Math.random() - 0.5) * 0.45,
+               phase: Math.random() * Math.PI * 2,
+               life: -Math.random() * 56, max: 96 + Math.random() * 68,
+               col: palette[i % palette.length] });
+    }
+  }
+
+  /* ── ② 鬼火・人魂 ── */
+  function buildOnibi(P, W, H, cx, cy, theme) {
+    const BLUE  = [120, 200, 255];
+    const PALE  = [190, 240, 255];
+    const GREEN = [140, 255, 210];
+    const cols  = [BLUE, PALE, GREEN, theme];
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 30 + Math.random() * 180;
+      P.push({ kind: 'onibi',
+               x: cx + Math.cos(a) * d,
+               y: cy + Math.sin(a) * d * 0.9 + 60,
+               r: 4 + Math.random() * 9,
+               vy: -0.35 - Math.random() * 0.75,
+               phase: Math.random() * Math.PI * 2,
+               sway: 0.7 + Math.random() * 1.6,
+               trail: [],
+               life: -Math.random() * 50, max: 130 + Math.random() * 80,
+               col: cols[i % cols.length] });
+    }
+    // 足元にうっすら漂う霊気
+    for (let i = 0; i < 20; i++) {
+      P.push({ kind: 'ember', x: Math.random() * W, y: cy + 120 + Math.random() * H * 0.35,
+               r: 1.2 + Math.random() * 3, vy: -0.25 - Math.random() * 0.5,
+               drift: (Math.random() - 0.5) * 0.3, phase: Math.random() * Math.PI * 2,
+               life: -Math.random() * 70, max: 120 + Math.random() * 70,
+               col: cols[i % cols.length] });
+    }
+  }
+
+  /* ── ⑧ 稲妻 ──
+     枝分かれする雷が走り、画面が白く光る。 */
+  function makeBolt(x0, y0, x1, y1, offset, depth, out) {
+    if (depth <= 0) { out.push([x0, y0], [x1, y1]); return; }
+    const mx = (x0 + x1) / 2 + (Math.random() - 0.5) * offset;
+    const my = (y0 + y1) / 2 + (Math.random() - 0.5) * offset * 0.35;
+    makeBolt(x0, y0, mx, my, offset * 0.55, depth - 1, out);
+    makeBolt(mx, my, x1, y1, offset * 0.55, depth - 1, out);
+  }
+
+  function buildInazuma(P, W, H, cx, cy, theme) {
+    const BOLT = [214, 232, 255];
+    for (let i = 0; i < 5; i++) {
+      const sx = cx + (Math.random() - 0.5) * W * 0.9;
+      const pts = [];
+      makeBolt(sx, -20, cx + (Math.random() - 0.5) * W * 0.5, cy + H * 0.2,
+               W * 0.42, 5, pts);
+      // 枝
+      const branches = [];
+      for (let k = 0; k < 4; k++) {
+        const j = 2 + (Math.random() * (pts.length - 6) | 0);
+        const b = [];
+        makeBolt(pts[j][0], pts[j][1],
+                 pts[j][0] + (Math.random() - 0.5) * W * 0.4,
+                 pts[j][1] + H * 0.12, W * 0.16, 3, b);
+        branches.push(b);
+      }
+      P.push({ kind: 'bolt', pts, branches, col: BOLT,
+               life: -i * 16 - (Math.random() * 8 | 0), max: 15 + Math.random() * 8 });
+    }
+    // 落雷のたびに画面が光る
+    for (let i = 0; i < 5; i++) {
+      P.push({ kind: 'flash', col: BOLT, life: -i * 16, max: 13 });
+    }
+    // 余韻の粒
+    for (let i = 0; i < 26; i++) {
+      P.push({ kind: 'ember', x: Math.random() * W, y: cy + (Math.random() - 0.3) * H * 0.5,
+               r: 1.2 + Math.random() * 3, vy: -0.4 - Math.random() * 0.8,
+               drift: (Math.random() - 0.5) * 0.5, phase: Math.random() * Math.PI * 2,
+               life: -20 - Math.random() * 60, max: 90 + Math.random() * 50,
+               col: i % 2 ? BOLT : theme });
+    }
+  }
+
+  /* ── ⑩ 蛍 ──
+     淡い黄緑の光が、それぞれの間合いで明滅しながら漂う。 */
+  function buildHotaru(P, W, H, cx, cy) {
+    const LIME = [190, 255, 130];
+    const WARM = [255, 246, 150];
+    const GOLD = [255, 216, 90];
+    const cols = [LIME, WARM, LIME, GOLD];
+    for (let i = 0; i < 64; i++) {
+      // 3割ほどは一斉に光る（本物の蛍も同調して明滅する）
+      const sync = Math.random() < 0.34;
+      P.push({ kind: 'firefly',
+               x: Math.random() * W,
+               y: cy - H * 0.3 + Math.random() * H * 0.95,
+               r: 4 + Math.random() * 7,
+               vy: -0.18 - Math.random() * 0.5,
+               drift: (Math.random() - 0.5) * 0.8,
+               phase: Math.random() * Math.PI * 2,
+               blink: sync ? 0.062 : 0.05 + Math.random() * 0.07,
+               boff: sync ? 0 : Math.random() * Math.PI * 2,
+               sync,
+               trail: [],
+               life: -Math.random() * 45, max: 150 + Math.random() * 70,
+               col: cols[i % cols.length] });
+    }
+  }
+
+  /* ── ③ 舞い散る花びら ── */
+  function buildHanabira(P, W, H) {
+    const PINK = [255, 183, 206];
+    const PALE = [255, 226, 235];
+    const DEEP = [240, 140, 175];
+    const cols = [PINK, PALE, DEEP];
+    for (let i = 0; i < 40; i++) {
+      P.push({ kind: 'petal',
+               x: Math.random() * W,
+               y: -H * 0.25 + Math.random() * H * 1.15,
+               r: 7 + Math.random() * 9,
+               vy: 1.0 + Math.random() * 1.7,
+               drift: (Math.random() - 0.5) * 1.3,
+               phase: Math.random() * Math.PI * 2,
+               spinX: 0.04 + Math.random() * 0.07,   // 表裏がひるがえる速さ
+               rot: Math.random() * Math.PI * 2,
+               spin: (Math.random() - 0.5) * 0.045,
+               life: -Math.random() * 18, max: 175 + Math.random() * 80,
+               col: cols[i % cols.length] });
+    }
+  }
+
+  /* ── ④ ひらひら落ちる金箔 ── */
+  function buildKinpaku(P, W, H, cx, cy) {
+    const GOLD  = [255, 206, 74];
+    const LIGHT = [255, 240, 170];
+    const DEEP  = [214, 150, 30];
+    const cols  = [GOLD, LIGHT, DEEP, GOLD];
+    for (let i = 0; i < 52; i++) {
+      P.push({ kind: 'foil',
+               x: cx + (Math.random() - 0.5) * W * 1.05,
+               y: -H * 0.3 + Math.random() * H * 1.2,
+               w: 5 + Math.random() * 10,
+               h: 7 + Math.random() * 13,
+               vy: 1.3 + Math.random() * 2.1,
+               drift: (Math.random() - 0.5) * 1.5,
+               phase: Math.random() * Math.PI * 2,
+               spinX: 0.05 + Math.random() * 0.1,
+               rot: Math.random() * Math.PI,
+               spin: (Math.random() - 0.5) * 0.07,
+               life: -Math.random() * 16, max: 165 + Math.random() * 70,
+               col: cols[i % cols.length] });
+    }
+  }
+
+  /* ── ⑤⑥ 炎（赤／青） ──
+     粒を散らす方式では「光る玉」にしか見えないため、
+     低解像度の熱マップを持ち、下の熱が上へ伝わりながら
+     冷めていく計算を毎フレーム回して炎を生成する。
+     それを画面サイズへ拡大描画すると、炎の揺らぎが出る。 */
+
+  /* 熱（0-255）を色に変換する対応表を作る */
+  function buildFirePalette(tone) {
+    const stops = (tone === 'blue')
+      ? [[0.00, [  0,  0,  0,   0]],
+         [0.14, [ 18, 22,120,  55]],
+         [0.36, [ 42, 96,238, 160]],
+         [0.62, [ 74,178,255, 220]],
+         [0.84, [168,236,255, 245]],
+         [1.00, [242,253,255, 255]]]
+      : [[0.00, [  0,  0,  0,   0]],
+         [0.14, [ 72, 10,  4,  55]],
+         [0.36, [196, 38, 12, 165]],
+         [0.62, [255,124, 24, 222]],
+         [0.84, [255,214, 96, 246]],
+         [1.00, [255,255,238, 255]]];
+    const pal = new Uint8ClampedArray(256 * 4);
+    for (let i = 0; i < 256; i++) {
+      const t = i / 255;
+      let a = stops[0], b = stops[stops.length - 1];
+      for (let k = 0; k < stops.length - 1; k++) {
+        if (t >= stops[k][0] && t <= stops[k + 1][0]) { a = stops[k]; b = stops[k + 1]; break; }
+      }
+      const f = (b[0] - a[0]) ? (t - a[0]) / (b[0] - a[0]) : 0;
+      for (let c = 0; c < 4; c++) pal[i * 4 + c] = a[1][c] + (b[1][c] - a[1][c]) * f;
+    }
+    return pal;
+  }
+
+  function runFireLoop(ctx, W, H, tone) {
+    const GW = 176, GH = 148;                 // 熱マップの解像度
+    const off  = document.createElement('canvas');
+    off.width  = GW; off.height = GH;
+    const octx = off.getContext('2d');
+    const img  = octx.createImageData(GW, GH);
+    const data = img.data;
+    const heat = new Uint8Array(GW * GH);
+    const pal  = buildFirePalette(tone);
+
+    // 火の粉（炎の上に重ねる）
+    const sparks = [];
+    for (let i = 0; i < 26; i++) {
+      sparks.push({ x: W / 2 + (Math.random() - 0.5) * W * 0.8,
+                    y: H + Math.random() * H * 0.25,
+                    r: 1 + Math.random() * 2.2,
+                    vy: -(3.2 + Math.random() * 3.6),
+                    drift: (Math.random() - 0.5) * 1.2,
+                    phase: Math.random() * Math.PI * 2,
+                    life: -Math.random() * 90, max: 80 + Math.random() * 60 });
+    }
+
+    // 火元（それぞれが1本の火柱になる）
+    const ROOTS = [];
+    for (let k = 0; k < 9; k++) {
+      ROOTS.push({ x: 0.08 + (k / 8) * 0.84 + (Math.random() - 0.5) * 0.05,
+                   w: 0.055 + Math.random() * 0.055,
+                   h: 0.75 + Math.random() * 0.55,
+                   wob: 0.012 + Math.random() * 0.03,
+                   seed: Math.random() * 6.28 });
+    }
+
+    /* 熱を1段階進める。
+       熱は1フレームに1行ずつしか上がらないので、
+       画面いっぱいに燃え広がるまで待たせないよう事前に回しておく。 */
+    function simulate(power, f) {
+      const base = (GH - 1) * GW;
+      for (let x = 0; x < GW; x++) {
+        const u = x / (GW - 1);
+        // 複数の火元を重ねて、独立した火柱が立つようにする
+        let v = 0;
+        for (let k = 0; k < ROOTS.length; k++) {
+          const r = ROOTS[k];
+          const pos = r.x + Math.sin(f * r.wob + r.seed) * 0.045;   // 火元がゆっくり動く
+          const d = (u - pos) / r.w;
+          v += r.h * Math.exp(-d * d * 3.2);
+        }
+        // 画面端ほど弱める
+        v *= 1 - Math.pow(Math.abs(u - 0.5) * 1.85, 3);
+        v *= power;
+        // 炎は絶えず強弱する
+        v *= 0.62 + Math.sin(f * 0.55 + x * 0.31) * 0.2
+                    + Math.sin(f * 0.23 - x * 0.13) * 0.18;
+        heat[base + x] = v > 0.03 ? Math.min(255, (165 + Math.random() * 90) * v) : 0;
+      }
+      for (let y = 0; y < GH - 1; y++) {
+        const row = y * GW, below = (y + 1) * GW;
+        const wy1 = y * 0.085 - f * 0.13;
+        const wy2 = y * 0.031 + f * 0.052;
+        for (let x = 0; x < GW; x++) {
+          // 風向きを場所ごとに変える。全体が横に流れるのではなく、
+          // あちこちで渦を巻いて炎がうねる
+          const wind = Math.sin(wy1 + x * 0.055) * 0.55
+                     + Math.sin(wy2 - x * 0.028) * 0.4;
+          const dx = Math.round(wind + (Math.random() * 3 - 1.5));
+          let sx = x + dx;
+          if (sx < 0) sx = 0; else if (sx >= GW) sx = GW - 1;
+          // 上ほど速く冷めて、先端がちぎれる
+          const v = heat[below + sx] - Math.random() * (1.9 + (1 - y / GH) * 2.6);
+          heat[row + x] = v > 0 ? v : 0;
+        }
+      }
+    }
+
+    // 表示した瞬間にはもう燃え盛っている状態にしておく
+    for (let i = 0; i < 150; i++) simulate(1, i);
+
+    const TOTAL = 260;
+    let f = 0;
+    ctx.imageSmoothingEnabled = true;
+
+    function step() {
+      f++;
+      const t = f / TOTAL;
+      // 一気に燃え上がり、後半でゆっくり消える
+      const power = t < 0.55 ? 1 : Math.max(0, 1 - (t - 0.55) / 0.45);
+
+      // 1フレームに2段階進める（1段階では動きが遅く、炎に見えない）
+      simulate(power, f);
+      simulate(power, f + 0.5);
+
+      // 熱マップを色に変換
+      for (let i = 0, n = GW * GH; i < n; i++) {
+        const p = heat[i] * 4;
+        const q = i * 4;
+        data[q]     = pal[p];
+        data[q + 1] = pal[p + 1];
+        data[q + 2] = pal[p + 2];
+        data[q + 3] = pal[p + 3];
+      }
+      octx.putImageData(img, 0, 0);
+
+      // 画面へ拡大描画
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+      // ぼかしをかけて熱マップの格子を消す（炎らしい滑らかさが出る）
+      ctx.filter = 'blur(4px)';
+      ctx.drawImage(off, 0, 0, W, H);
+      ctx.filter = 'none';
+
+      // 火の粉
+      for (const s of sparks) {
+        s.life++;
+        if (s.life < 0 || s.life > s.max) continue;
+        const st = s.life / s.max;
+        s.phase += 0.13;
+        s.y += s.vy;
+        s.vy *= 0.987;
+        s.x += s.drift + Math.sin(s.phase) * 0.7;
+        const a = Math.sin(st * Math.PI) * 0.9 * power;
+        const idx = Math.min(255, 170 + (1 - st) * 85 | 0) * 4;
+        const col = [pal[idx], pal[idx + 1], pal[idx + 2]];
+        const tail = s.r * 5;
+        const g = ctx.createLinearGradient(s.x, s.y, s.x, s.y + tail);
+        g.addColorStop(0, rgba(col, a * 0.7));
+        g.addColorStop(1, rgba(col, 0));
+        ctx.strokeStyle = g;
+        ctx.lineWidth = s.r * 0.9;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x, s.y + tail); ctx.stroke();
+        ctx.fillStyle = rgba([255, 255, 245], a);
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.7, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+
+      if (f < TOTAL) { fxRAF = requestAnimationFrame(step); }
+      else { ctx.clearRect(0, 0, W, H); fxRAF = null; }
+    }
+    fxRAF = requestAnimationFrame(step);
+  }
+
+  /* ── 共通の描画ループ ── */
+  function runFxLoop(ctx, W, H, P, mode) {
+    // 光り物は加算合成、実体のある物（花びら・金箔）は通常合成
+    const additive = !['hanabira', 'kinpaku'].includes(mode);
+
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = additive ? 'lighter' : 'source-over';
+      let alive = false;
+
+      for (const p of P) {
+        p.life++;
+        if (p.life < 0) { alive = true; continue; }
+        if (p.life > p.max) continue;
+        alive = true;
+        const t = p.life / p.max;
+        const fade = 1 - t;
+
+        if (p.kind === 'streak') {
+          p.x += p.vx; p.y += p.vy;
+          p.vx *= 0.9; p.vy *= 0.9;
+          const g = ctx.createLinearGradient(p.x, p.y,
+                    p.x - p.vx * p.len * 0.1, p.y - p.vy * p.len * 0.1);
+          g.addColorStop(0, rgba(p.col, fade * 0.95));
+          g.addColorStop(1, rgba(p.col, 0));
+          ctx.strokeStyle = g;
+          ctx.lineWidth = p.w * fade;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x - p.vx * p.len * 0.1, p.y - p.vy * p.len * 0.1);
+          ctx.stroke();
+
+        } else if (p.kind === 'star') {
+          p.y += p.vy; p.rot += p.spin;
+          // 出はじめに大きく開いて、消え際に絞る（瞬き）
+          const tw = Math.sin(t * Math.PI);
+          drawFlare(ctx, p.x, p.y, p.r * (0.35 + tw * 0.9), p.rot, p.col, tw);
+
+        } else if (p.kind === 'onibi') {
+          p.phase += 0.045;
+          p.y += p.vy;
+          p.x += Math.sin(p.phase) * p.sway;
+          const a = Math.sin(t * Math.PI) * 0.95;
+          // 尾を引く
+          p.trail.unshift({ x: p.x, y: p.y });
+          if (p.trail.length > 11) p.trail.pop();
+          p.trail.forEach((q, i) => {
+            const f = (1 - i / p.trail.length);
+            const rr = p.r * f * 0.85;
+            const g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, rr * 2.6);
+            g.addColorStop(0,   rgba(p.col, a * f * 0.5));
+            g.addColorStop(0.4, rgba(p.col, a * f * 0.2));
+            g.addColorStop(1,   rgba(p.col, 0));
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(q.x, q.y, rr * 2.6, 0, Math.PI * 2); ctx.fill();
+          });
+          // 芯
+          const core = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 2.4);
+          core.addColorStop(0,    rgba([255, 255, 255], a));
+          core.addColorStop(0.28, rgba(p.col, a * 0.85));
+          core.addColorStop(1,    rgba(p.col, 0));
+          ctx.fillStyle = core;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 2.4, 0, Math.PI * 2); ctx.fill();
+
+        } else if (p.kind === 'bolt') {
+          const a = Math.pow(1 - t, 1.6);
+          const stroke = (pts, wid, alpha) => {
+            ctx.strokeStyle = rgba(p.col, alpha);
+            ctx.lineWidth = wid;
+            ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(pts[0][0], pts[0][1]);
+            for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+            ctx.stroke();
+          };
+          stroke(p.pts, 46, a * 0.10);   // いちばん外の光
+          stroke(p.pts, 26, a * 0.20);   // 外側のにじみ
+          stroke(p.pts, 12, a * 0.55);
+          stroke(p.pts, 5.5, a);         // 芯
+          ctx.strokeStyle = rgba([255, 255, 255], a);   // 白く抜ける中心
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(p.pts[0][0], p.pts[0][1]);
+          for (let k = 1; k < p.pts.length; k++) ctx.lineTo(p.pts[k][0], p.pts[k][1]);
+          ctx.stroke();
+          p.branches.forEach(b => {
+            stroke(b, 14, a * 0.14);
+            stroke(b, 6,  a * 0.4);
+            stroke(b, 2.4, a * 0.9);
+          });
+
+        } else if (p.kind === 'flash') {
+          const a = Math.pow(1 - t, 2.4) * 0.42;
+          ctx.fillStyle = rgba(p.col, a);
+          ctx.fillRect(0, 0, W, H);
+
+        } else if (p.kind === 'firefly') {
+          p.phase += 0.04;
+          p.boff += p.blink;
+          p.y += p.vy;
+          p.x += p.drift + Math.sin(p.phase) * 0.9;
+          // 明滅。同調組はいっせいに強く光る
+          const raw = Math.max(0, Math.sin(p.boff));
+          const blink = Math.pow(raw, p.sync ? 1.7 : 2.3);
+          const a = blink * Math.sin(t * Math.PI) * (p.sync ? 1 : 0.9);
+
+          // 光りながら動いた跡を残す
+          p.trail.unshift({ x: p.x, y: p.y, a });
+          if (p.trail.length > 8) p.trail.pop();
+          for (let k = 1; k < p.trail.length; k++) {
+            const q = p.trail[k];
+            const fa = q.a * (1 - k / p.trail.length) * 0.32;
+            if (fa < 0.01) continue;
+            const rr = p.r * 2.4 * (1 - k / p.trail.length);
+            const tg = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, rr);
+            tg.addColorStop(0, rgba(p.col, fa));
+            tg.addColorStop(1, rgba(p.col, 0));
+            ctx.fillStyle = tg;
+            ctx.beginPath(); ctx.arc(q.x, q.y, rr, 0, Math.PI * 2); ctx.fill();
+          }
+
+          if (a > 0.01) {
+            // 大きな暈
+            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
+            g.addColorStop(0,    rgba([255, 255, 240], a));
+            g.addColorStop(0.18, rgba(p.col, a * 0.85));
+            g.addColorStop(0.45, rgba(p.col, a * 0.3));
+            g.addColorStop(1,    rgba(p.col, 0));
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2); ctx.fill();
+            // 強く光った瞬間だけ十字の光条が伸びる
+            if (a > 0.6) {
+              drawFlare(ctx, p.x, p.y, p.r * 5.5 * a, 0, p.col, (a - 0.6) * 2.2);
+            }
+          }
+
+        } else if (p.kind === 'petal') {
+          p.phase += p.spinX;
+          p.y += p.vy;
+          p.x += p.drift + Math.sin(p.phase) * 1.1;
+          p.rot += p.spin;
+          const flip = Math.abs(Math.cos(p.phase));       // 表裏のひるがえり
+          const a = Math.min(1, Math.sin(t * Math.PI) * 2.2);
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.scale(0.35 + flip * 0.65, 1);
+          ctx.globalAlpha = a;
+          ctx.fillStyle = rgba(p.col, 1);
+          ctx.beginPath();
+          // 桜の花びら（先端に切れ込み）
+          ctx.moveTo(0, -p.r);
+          ctx.bezierCurveTo( p.r * 0.95, -p.r * 0.45,  p.r * 0.65, p.r * 0.7, 0, p.r);
+          ctx.bezierCurveTo(-p.r * 0.65,  p.r * 0.7, -p.r * 0.95, -p.r * 0.45, 0, -p.r);
+          ctx.fill();
+          ctx.restore();
+
+        } else if (p.kind === 'foil') {
+          p.phase += p.spinX;
+          p.y += p.vy;
+          p.x += p.drift + Math.sin(p.phase) * 1.3;
+          p.rot += p.spin;
+          const flip = Math.cos(p.phase);                  // 箔がひるがえって光る
+          const a = Math.min(1, Math.sin(t * Math.PI) * 2.4);
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.scale(1, Math.max(0.12, Math.abs(flip)));
+          ctx.globalAlpha = a;
+          // 表を向くほど明るく
+          const lit = 0.55 + Math.abs(flip) * 0.45;
+          const g = ctx.createLinearGradient(-p.w / 2, 0, p.w / 2, 0);
+          g.addColorStop(0,   rgba(p.col.map(v => v * lit * 0.75), 1));
+          g.addColorStop(0.5, rgba(p.col.map(v => Math.min(255, v * lit * 1.25)), 1));
+          g.addColorStop(1,   rgba(p.col.map(v => v * lit * 0.75), 1));
+          ctx.fillStyle = g;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+
+        } else {
+          p.phase += 0.055;
+          p.y += p.vy;
+          p.x += p.drift + Math.sin(p.phase) * 0.55;
+          const a = Math.sin(t * Math.PI) * 0.92;
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3.4);
+          g.addColorStop(0,    rgba(p.col, a));
+          g.addColorStop(0.35, rgba(p.col, a * 0.42));
+          g.addColorStop(1,    rgba(p.col, 0));
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r * 3.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      if (alive) { fxRAF = requestAnimationFrame(frame); }
+      else { ctx.clearRect(0, 0, W, H); fxRAF = null; }
+    }
+    fxRAF = requestAnimationFrame(frame);
+  }
+
+  /* 4条のレンズフレアを1つ描く */
+  function drawFlare(ctx, x, y, r, rot, col, alpha) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    // 中心のにじみ
+    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.52);
+    core.addColorStop(0, rgba([255, 255, 255], alpha));
+    core.addColorStop(0.5, rgba(col, alpha * 0.55));
+    core.addColorStop(1, rgba(col, 0));
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.52, 0, Math.PI * 2); ctx.fill();
+
+    // 十字の光条（縦長・横長の2枚を重ねる）
+    const spike = (len, thick) => {
+      const g = ctx.createLinearGradient(0, -len, 0, len);
+      g.addColorStop(0,    rgba(col, 0));
+      g.addColorStop(0.5,  rgba([255, 255, 255], alpha));
+      g.addColorStop(1,    rgba(col, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(0, -len);
+      ctx.quadraticCurveTo(thick, 0, 0, len);
+      ctx.quadraticCurveTo(-thick, 0, 0, -len);
+      ctx.fill();
+    };
+    spike(r, r * 0.11);
+    ctx.rotate(Math.PI / 2);
+    spike(r * 0.68, r * 0.08);
+
+    ctx.restore();
+  }
+
+  function hexToRGB(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+  }
+  function rgba(c, a) {
+    return `rgba(${c[0]},${c[1]},${c[2]},${Math.max(0, Math.min(1, a))})`;
+  }
+
+
+  /* ────────────────────────────────────────
+     全妖怪コンプリート（レア演出）
+     5体を扇状に並べ、順番に立ち上がらせる
+  ──────────────────────────────────────── */
+  let allFxRAF = null;
+
+  function showAllComplete() {
+    const stage = document.getElementById('all-stage');
+    // 中央を大きく、外側ほど小さく奥に置く
+    // 合計 96% + すき間。中央をいちばん大きく、外へ行くほど小さく見せる
+    const layout = [
+      { w: 17, lift: 10, d: 0.55 },
+      { w: 20, lift: 5,  d: 0.40 },
+      { w: 23, lift: 0,  d: 0.15 },   // 中央
+      { w: 20, lift: 5,  d: 0.28 },
+      { w: 17, lift: 10, d: 0.67 },
+    ];
+    stage.innerHTML = STAMPS_CONFIG.slice(0, 5).map((st, i) => {
+      const L = layout[i];
+      return `
+        <div class="all-char" style="
+             width:${L.w}%; margin-bottom:${L.lift}px;
+             animation-delay:${L.d}s;"
+             title="${st.name}">
+          <img src="${st.image}" alt="${st.name}"
+               onerror="this.outerHTML='<span class=\'fb\'>${st.emoji}</span>'">
+        </div>`;
+    }).join('');
+
+    if (isDemoMode()) {
+      document.getElementById('all-to-book').href = 'index.html?demo=1';
+    }
+
+    document.getElementById('phase-image').classList.add('hidden');
+    document.getElementById('phase-complete').classList.add('hidden');
+    document.getElementById('phase-scan').classList.add('hidden');
+    document.getElementById('phase-all').classList.remove('hidden');
+
+    requestAnimationFrame(() => requestAnimationFrame(() => launchAllFx()));
+  }
+
+  /* コンプリート専用のパーティクル。
+     金箔・光の粒・レンズフレアを全部まとめて降らせる */
+  function launchAllFx() {
+    const cv = document.getElementById('all-canvas');
+    if (!cv) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (allFxRAF) cancelAnimationFrame(allFxRAF);
+
+    const ctx = cv.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // 表示直後は clientWidth が 0 のことがあるので、画面サイズで補う
+    const W = cv.clientWidth  || window.innerWidth;
+    const H = cv.clientHeight || window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const GOLD = [255, 214, 92], PALE = [255, 246, 200], WHITE = [255, 252, 240];
+    const P = [];
+
+    // 金箔（ひらひら落ちる）
+    for (let i = 0; i < 70; i++) {
+      P.push({ k: 'foil', x: Math.random() * W, y: -H * 0.4 + Math.random() * H * 1.3,
+               w: 5 + Math.random() * 11, h: 7 + Math.random() * 14,
+               vy: 1.1 + Math.random() * 2.2, drift: (Math.random() - 0.5) * 1.4,
+               ph: Math.random() * 6.28, spinX: 0.05 + Math.random() * 0.09,
+               rot: Math.random() * 3.14, spin: (Math.random() - 0.5) * 0.07,
+               col: i % 3 === 0 ? PALE : GOLD, life: -Math.random() * 40, max: 1e9 });
+    }
+    // 舞い上がる光の粒
+    for (let i = 0; i < 60; i++) {
+      P.push({ k: 'ember', x: Math.random() * W, y: H * 0.35 + Math.random() * H * 0.7,
+               r: 1.4 + Math.random() * 4, vy: -0.4 - Math.random() * 1.2,
+               drift: (Math.random() - 0.5) * 0.5, ph: Math.random() * 6.28,
+               col: i % 4 === 0 ? WHITE : GOLD, life: -Math.random() * 90, max: 150 });
+    }
+    // 瞬くレンズフレア
+    for (let i = 0; i < 26; i++) {
+      P.push({ k: 'star', x: Math.random() * W, y: H * 0.15 + Math.random() * H * 0.65,
+               r: 10 + Math.random() * 30, rot: Math.random() * 3.14,
+               spin: (Math.random() - 0.5) * 0.04,
+               col: Math.random() < 0.6 ? GOLD : WHITE,
+               life: -Math.random() * 130, max: 70 + Math.random() * 60 });
+    }
+
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+      for (const p of P) {
+        p.life++;
+        if (p.life < 0) continue;
+
+        if (p.k === 'foil') {
+          p.ph += p.spinX; p.y += p.vy;
+          p.x += p.drift + Math.sin(p.ph) * 1.2; p.rot += p.spin;
+          if (p.y > H + 40) { p.y = -40; p.x = Math.random() * W; }   // 繰り返し降らせる
+          const flip = Math.cos(p.ph);
+          const lit = 0.55 + Math.abs(flip) * 0.45;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.scale(1, Math.max(0.12, Math.abs(flip)));
+          ctx.globalAlpha = 0.92;
+          const g = ctx.createLinearGradient(-p.w/2, 0, p.w/2, 0);
+          g.addColorStop(0,   rgba(p.col.map(v => v*lit*0.7), 1));
+          g.addColorStop(0.5, rgba(p.col.map(v => Math.min(255, v*lit*1.3)), 1));
+          g.addColorStop(1,   rgba(p.col.map(v => v*lit*0.7), 1));
+          ctx.fillStyle = g; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+          ctx.restore(); ctx.globalAlpha = 1;
+
+        } else if (p.k === 'ember') {
+          const t = (p.life % p.max) / p.max;
+          p.ph += 0.05; p.y += p.vy; p.x += p.drift + Math.sin(p.ph) * 0.55;
+          if (p.y < -30) { p.y = H + 20; p.x = Math.random() * W; }
+          const a = Math.sin(t * Math.PI) * 0.9;
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*3.4);
+          g.addColorStop(0, rgba(p.col, a));
+          g.addColorStop(0.35, rgba(p.col, a*0.4));
+          g.addColorStop(1, rgba(p.col, 0));
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r*3.4, 0, 6.29); ctx.fill();
+
+        } else {
+          const t = (p.life % p.max) / p.max;
+          if (p.life % p.max === 0) { p.x = Math.random()*W; p.y = H*0.12 + Math.random()*H*0.7; }
+          p.rot += p.spin;
+          const tw = Math.sin(t * Math.PI);
+          drawFlare(ctx, p.x, p.y, p.r * (0.3 + tw * 0.9), p.rot, p.col, tw * 0.95);
+        }
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      allFxRAF = requestAnimationFrame(frame);
+    }
+    allFxRAF = requestAnimationFrame(frame);
+  }
+
+  function showCompletePhase() {
+    if (!curStamp) return;
+    const badge = document.getElementById('complete-badge');
+    if (curIsNew) {
+      badge.textContent = '🎉 スタンプGET！';
+      badge.classList.remove('already');
+    } else {
+      badge.textContent = '✅ 取得済み';
+      badge.classList.add('already');
+    }
+    const cImg = document.getElementById('complete-char-img');
+    cImg.src   = curStamp.image;
+    cImg.alt   = curStamp.name;
+    cImg.style.display = 'block';
+    document.getElementById('complete-emoji-fb').style.display = 'none';
+    document.getElementById('complete-emoji-fb').textContent   = curStamp.emoji;
+    document.getElementById('complete-name').textContent = curStamp.name;
+    document.getElementById('complete-sub').textContent  = curStamp.subtitle;
+    document.querySelector('.btn-to-list').style.background = curStamp.color;
+    // 5体そろったらレア画面へ
+    if (isComplete()) { showAllComplete(); return; }
+
+    document.getElementById('phase-image').classList.add('hidden');
+    document.getElementById('phase-complete').classList.remove('hidden');
+    if (curIsNew) launchConfetti();
+  }
+
+  function resetToScan() {
+    document.getElementById('phase-complete').classList.add('hidden');
+    document.getElementById('phase-scan').classList.remove('hidden');
+    document.getElementById('confetti-area').innerHTML = '';
+    document.getElementById('btn-start').style.display = 'block';
+    const imgEl = document.getElementById('char-image');
+    // src を空にすると onerror が発火するため、先にハンドラを外す
+    imgEl.onerror = null;
+    imgEl.style.display = '';
+    imgEl.removeAttribute('src');
+    const emjEl = document.getElementById('char-emoji-fallback');
+    emjEl.style.display = 'none';
+    emjEl.textContent   = '';
+    setStatus('QRコードを読み取ります', '');
+    active   = false;
+    scanner  = null;
+    curStamp = null;
+  }
+
+  /* ────────────────────────────────────────
+     QRコードから直接開かれた場合（?id=X）
+     スマホの標準カメラでQRを読むとここに来る。
+     カメラ画面を飛ばして、いきなりキャラクター表示へ。
+  ──────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', () => {
+    const replay = document.getElementById('all-replay');
+    if (replay) replay.onclick = () => { showAllComplete(); };
+
+    // デモ中は行き先にも demo=1 を引き継ぐ
+    if (isDemoMode()) {
+      document.querySelectorAll('a[href="index.html"]').forEach(a => {
+        a.href = 'index.html?demo=1';
+      });
+      const badge = document.getElementById('demo-badge');
+      if (badge) badge.classList.remove('hidden');
+      // デモには読み取るQRが無いので、カメラではなく見本一覧に戻す
+      const next = document.getElementById('btn-next');
+      if (next) {
+        next.textContent = '← ほかの妖怪を見る';
+        next.onclick = () => { location.href = 'demo.html'; };
+      }
+      const back = document.querySelector('.back-link');
+      if (back) { back.textContent = '← 見本にもどる'; back.href = 'demo.html'; }
+    }
+    const raw = new URLSearchParams(location.search).get('id');
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isInteger(id) || id < 1 || id > 5) return;
+    showImagePhase(id);
+  });
+
+  function launchConfetti() {
+    const area   = document.getElementById('confetti-area');
+    const colors = ['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#C9B1FF','#FF7043','#5C6BC0'];
+    area.innerHTML = '';
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left              = Math.random() * 100 + 'vw';
+      p.style.background        = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      p.style.animationDelay    = Math.random() * 0.6 + 's';
+      p.style.width             = (6 + Math.random() * 8) + 'px';
+      p.style.height            = (6 + Math.random() * 8) + 'px';
+      p.style.borderRadius      = Math.random() > 0.5 ? '50%' : '2px';
+      area.appendChild(p);
+    }
+    setTimeout(() => { area.innerHTML = ''; }, 4000);
+  }
+</script>
+</body>
+</html>
