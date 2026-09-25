@@ -467,6 +467,101 @@
     }
     .btn-to-list:active  { opacity: 0.85; }
     .btn-next-scan:active { background: #f0f4ff; }
+    /* ========================================
+       全妖怪コンプリート（レア演出）
+       ======================================== */
+    #phase-all {
+      background: radial-gradient(ellipse at 50% 40%, #2a1650 0%, #0b0818 62%);
+      justify-content: center;
+      overflow: hidden;
+    }
+    #all-canvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 1;
+    }
+    #all-rays {
+      position: absolute; top: 42%; left: 50%;
+      width: 190vmax; height: 190vmax;
+      transform: translate(-50%,-50%);
+      pointer-events: none; z-index: 0; opacity: 0;
+      background: repeating-conic-gradient(from 0deg at 50% 50%,
+        #FFD75E 0deg 4deg, transparent 4deg 14deg);
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 5%, transparent 46%);
+      mask-image: radial-gradient(circle at 50% 50%, #000 5%, transparent 46%);
+      animation: allRaysIn 1s ease-out 0.1s forwards, spin 34s linear infinite;
+    }
+    @keyframes allRaysIn {
+      from { opacity: 0; transform: translate(-50%,-50%) scale(0.4); }
+      to   { opacity: 0.26; transform: translate(-50%,-50%) scale(1); }
+    }
+    .all-inner {
+      position: relative; z-index: 2; width: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 16px;
+    }
+    .all-stage {
+      position: relative; width: 100%; max-width: 420px;
+      height: 46vh; min-height: 260px; margin-bottom: 8px;
+    }
+    .all-char {
+      position: absolute; bottom: 0;
+      transform-origin: bottom center;
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+      opacity: 0;
+      animation: charRise 0.65s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .all-char img { width: 100%; height: auto; display: block; }
+    .all-char .fb { font-size: 3rem; }
+    @keyframes charRise {
+      from { opacity: 0; transform: translateY(44px) scale(0.72); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .all-title {
+      font-size: 0.74rem; letter-spacing: 0.3em;
+      color: #FFD75E; font-weight: 800;
+      animation: fadeUp 0.6s ease-out 1.5s both;
+    }
+    .all-main {
+      font-size: clamp(1.7rem, 7.5vw, 2.3rem);
+      font-weight: 900; letter-spacing: 0.05em;
+      text-align: center; line-height: 1.3; margin-top: 2px;
+      background: linear-gradient(180deg, #FFFBE6 0%, #FFD24A 52%, #E89000 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 12px rgba(0,0,0,0.7));
+      animation: nameIn 0.7s cubic-bezier(0.34,1.56,0.64,1) 1.7s both;
+    }
+    .all-sub {
+      font-size: 0.84rem; color: #E6D9FF; opacity: 0.85;
+      margin-top: 8px; text-align: center; line-height: 1.7;
+      animation: fadeUp 0.6s ease-out 2.1s both;
+    }
+    .all-actions {
+      width: 100%; max-width: 330px; margin-top: 18px;
+      display: flex; flex-direction: column; gap: 9px;
+      animation: fadeUp 0.6s ease-out 2.4s both;
+    }
+    .all-actions a, .all-actions button {
+      display: block; width: 100%; text-align: center;
+      border: none; border-radius: 999px;
+      padding: 14px; font-size: 0.95rem; font-weight: 800;
+      cursor: pointer; text-decoration: none; font-family: inherit;
+    }
+    .all-primary {
+      background: linear-gradient(135deg, #FFD75E, #F0960E);
+      color: #2A1400; box-shadow: 0 6px 24px rgba(240,150,14,0.45);
+    }
+    .all-secondary {
+      background: rgba(255,255,255,0.09); color: #EDE9FE;
+      border: 1px solid rgba(255,255,255,0.22) !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #all-rays, .all-char, .all-title, .all-main, .all-sub, .all-actions {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -545,6 +640,23 @@
     <p class="complete-sub"  id="complete-sub"></p>
     <a href="index.html" class="btn-to-list">&#127381; スタンプ帳を見る</a>
     <button class="btn-next-scan" id="btn-next" onclick="resetToScan()">&#128247; 次のQRをスキャン</button>
+  </div>
+</div>
+
+
+<!-- ===== 全妖怪コンプリート（レア） ===== -->
+<div id="phase-all" class="phase hidden">
+  <div id="all-rays"></div>
+  <canvas id="all-canvas"></canvas>
+  <div class="all-inner">
+    <div class="all-stage" id="all-stage"></div>
+    <p class="all-title">ALL YOKAI COMPLETE</p>
+    <p class="all-main">百鬼夜行<br>コンプリート！</p>
+    <p class="all-sub">五体の妖怪がすべて揃いました<br>本部テントで景品とお引き換えください</p>
+    <div class="all-actions">
+      <a class="all-primary" href="index.html" id="all-to-book">&#127381; スタンプ帳を見る</a>
+      <button class="all-secondary" id="all-replay">&#10022; もう一度見る</button>
+    </div>
   </div>
 </div>
 
@@ -1364,6 +1476,140 @@
     return `rgba(${c[0]},${c[1]},${c[2]},${Math.max(0, Math.min(1, a))})`;
   }
 
+
+  /* ────────────────────────────────────────
+     全妖怪コンプリート（レア演出）
+     5体を扇状に並べ、順番に立ち上がらせる
+  ──────────────────────────────────────── */
+  let allFxRAF = null;
+
+  function showAllComplete() {
+    const stage = document.getElementById('all-stage');
+    // 中央を大きく、外側ほど小さく奥に置く
+    const layout = [
+      { i: 0, x: 2,  w: 30, z: 1, d: 0.55 },
+      { i: 1, x: 20, w: 34, z: 2, d: 0.40 },
+      { i: 2, x: 37, w: 40, z: 4, d: 0.15 },   // 中央
+      { i: 3, x: 58, w: 34, z: 3, d: 0.28 },
+      { i: 4, x: 74, w: 30, z: 1, d: 0.67 },
+    ];
+    stage.innerHTML = layout.map(L => {
+      const st = STAMPS_CONFIG[L.i];
+      if (!st) return '';
+      return `
+        <div class="all-char" style="
+             left:${L.x}%; width:${L.w}%; z-index:${L.z};
+             animation-delay:${L.d}s;">
+          <img src="${st.image}" alt="${st.name}"
+               onerror="this.outerHTML='<span class=\'fb\'>${st.emoji}</span>'">
+        </div>`;
+    }).join('');
+
+    if (isDemoMode()) {
+      document.getElementById('all-to-book').href = 'index.html?demo=1';
+    }
+
+    document.getElementById('phase-image').classList.add('hidden');
+    document.getElementById('phase-complete').classList.add('hidden');
+    document.getElementById('phase-scan').classList.add('hidden');
+    document.getElementById('phase-all').classList.remove('hidden');
+
+    requestAnimationFrame(() => requestAnimationFrame(() => launchAllFx()));
+  }
+
+  /* コンプリート専用のパーティクル。
+     金箔・光の粒・レンズフレアを全部まとめて降らせる */
+  function launchAllFx() {
+    const cv = document.getElementById('all-canvas');
+    if (!cv) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (allFxRAF) cancelAnimationFrame(allFxRAF);
+
+    const ctx = cv.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // 表示直後は clientWidth が 0 のことがあるので、画面サイズで補う
+    const W = cv.clientWidth  || window.innerWidth;
+    const H = cv.clientHeight || window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const GOLD = [255, 214, 92], PALE = [255, 246, 200], WHITE = [255, 252, 240];
+    const P = [];
+
+    // 金箔（ひらひら落ちる）
+    for (let i = 0; i < 70; i++) {
+      P.push({ k: 'foil', x: Math.random() * W, y: -H * 0.4 + Math.random() * H * 1.3,
+               w: 5 + Math.random() * 11, h: 7 + Math.random() * 14,
+               vy: 1.1 + Math.random() * 2.2, drift: (Math.random() - 0.5) * 1.4,
+               ph: Math.random() * 6.28, spinX: 0.05 + Math.random() * 0.09,
+               rot: Math.random() * 3.14, spin: (Math.random() - 0.5) * 0.07,
+               col: i % 3 === 0 ? PALE : GOLD, life: -Math.random() * 40, max: 1e9 });
+    }
+    // 舞い上がる光の粒
+    for (let i = 0; i < 60; i++) {
+      P.push({ k: 'ember', x: Math.random() * W, y: H * 0.35 + Math.random() * H * 0.7,
+               r: 1.4 + Math.random() * 4, vy: -0.4 - Math.random() * 1.2,
+               drift: (Math.random() - 0.5) * 0.5, ph: Math.random() * 6.28,
+               col: i % 4 === 0 ? WHITE : GOLD, life: -Math.random() * 90, max: 150 });
+    }
+    // 瞬くレンズフレア
+    for (let i = 0; i < 26; i++) {
+      P.push({ k: 'star', x: Math.random() * W, y: H * 0.15 + Math.random() * H * 0.65,
+               r: 10 + Math.random() * 30, rot: Math.random() * 3.14,
+               spin: (Math.random() - 0.5) * 0.04,
+               col: Math.random() < 0.6 ? GOLD : WHITE,
+               life: -Math.random() * 130, max: 70 + Math.random() * 60 });
+    }
+
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+      for (const p of P) {
+        p.life++;
+        if (p.life < 0) continue;
+
+        if (p.k === 'foil') {
+          p.ph += p.spinX; p.y += p.vy;
+          p.x += p.drift + Math.sin(p.ph) * 1.2; p.rot += p.spin;
+          if (p.y > H + 40) { p.y = -40; p.x = Math.random() * W; }   // 繰り返し降らせる
+          const flip = Math.cos(p.ph);
+          const lit = 0.55 + Math.abs(flip) * 0.45;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.scale(1, Math.max(0.12, Math.abs(flip)));
+          ctx.globalAlpha = 0.92;
+          const g = ctx.createLinearGradient(-p.w/2, 0, p.w/2, 0);
+          g.addColorStop(0,   rgba(p.col.map(v => v*lit*0.7), 1));
+          g.addColorStop(0.5, rgba(p.col.map(v => Math.min(255, v*lit*1.3)), 1));
+          g.addColorStop(1,   rgba(p.col.map(v => v*lit*0.7), 1));
+          ctx.fillStyle = g; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+          ctx.restore(); ctx.globalAlpha = 1;
+
+        } else if (p.k === 'ember') {
+          const t = (p.life % p.max) / p.max;
+          p.ph += 0.05; p.y += p.vy; p.x += p.drift + Math.sin(p.ph) * 0.55;
+          if (p.y < -30) { p.y = H + 20; p.x = Math.random() * W; }
+          const a = Math.sin(t * Math.PI) * 0.9;
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*3.4);
+          g.addColorStop(0, rgba(p.col, a));
+          g.addColorStop(0.35, rgba(p.col, a*0.4));
+          g.addColorStop(1, rgba(p.col, 0));
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r*3.4, 0, 6.29); ctx.fill();
+
+        } else {
+          const t = (p.life % p.max) / p.max;
+          if (p.life % p.max === 0) { p.x = Math.random()*W; p.y = H*0.12 + Math.random()*H*0.7; }
+          p.rot += p.spin;
+          const tw = Math.sin(t * Math.PI);
+          drawFlare(ctx, p.x, p.y, p.r * (0.3 + tw * 0.9), p.rot, p.col, tw * 0.95);
+        }
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      allFxRAF = requestAnimationFrame(frame);
+    }
+    allFxRAF = requestAnimationFrame(frame);
+  }
+
   function showCompletePhase() {
     if (!curStamp) return;
     const badge = document.getElementById('complete-badge');
@@ -1383,6 +1629,9 @@
     document.getElementById('complete-name').textContent = curStamp.name;
     document.getElementById('complete-sub').textContent  = curStamp.subtitle;
     document.querySelector('.btn-to-list').style.background = curStamp.color;
+    // 5体そろったらレア画面へ
+    if (isComplete()) { showAllComplete(); return; }
+
     document.getElementById('phase-image').classList.add('hidden');
     document.getElementById('phase-complete').classList.remove('hidden');
     if (curIsNew) launchConfetti();
@@ -1413,6 +1662,9 @@
      カメラ画面を飛ばして、いきなりキャラクター表示へ。
   ──────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', () => {
+    const replay = document.getElementById('all-replay');
+    if (replay) replay.onclick = () => { showAllComplete(); };
+
     // デモ中は行き先にも demo=1 を引き継ぐ
     if (isDemoMode()) {
       document.querySelectorAll('a[href="index.html"]').forEach(a => {
