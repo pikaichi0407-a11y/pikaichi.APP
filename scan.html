@@ -470,6 +470,22 @@
   </style>
 </head>
 <body>
+<script>
+  /* QRから直接来た場合（?id=）は、カメラ画面が一瞬映らないよう
+     DOMContentLoaded を待たずに即座に隠す */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (!p.get('id')) return;
+    document.addEventListener('readystatechange', function () {
+      var el = document.getElementById('phase-scan');
+      if (el) el.classList.add('hidden');
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('phase-scan');
+      if (el) el.classList.add('hidden');
+    });
+  })();
+</script>
 
 <div id="phase-scan" class="phase">
   <header class="scan-header">
@@ -528,7 +544,7 @@
     <p class="complete-name" id="complete-name"></p>
     <p class="complete-sub"  id="complete-sub"></p>
     <a href="index.html" class="btn-to-list">&#127381; スタンプ帳を見る</a>
-    <button class="btn-next-scan" onclick="resetToScan()">&#128247; 次のQRをスキャン</button>
+    <button class="btn-next-scan" id="btn-next" onclick="resetToScan()">&#128247; 次のQRをスキャン</button>
   </div>
 </div>
 
@@ -1404,6 +1420,14 @@
       });
       const badge = document.getElementById('demo-badge');
       if (badge) badge.classList.remove('hidden');
+      // デモには読み取るQRが無いので、カメラではなく見本一覧に戻す
+      const next = document.getElementById('btn-next');
+      if (next) {
+        next.textContent = '← ほかの妖怪を見る';
+        next.onclick = () => { location.href = 'demo.html'; };
+      }
+      const back = document.querySelector('.back-link');
+      if (back) { back.textContent = '← 見本にもどる'; back.href = 'demo.html'; }
     }
     const raw = new URLSearchParams(location.search).get('id');
     if (!raw) return;
