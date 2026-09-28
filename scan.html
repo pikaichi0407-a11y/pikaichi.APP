@@ -580,7 +580,7 @@
      DOMContentLoaded を待たずに即座に隠す */
   (function () {
     var p = new URLSearchParams(location.search);
-    if (!p.get('id')) return;
+    if (!p.get('id') && p.get('all') !== '1') return;
     document.addEventListener('readystatechange', function () {
       var el = document.getElementById('phase-scan');
       if (el) el.classList.add('hidden');
@@ -1692,7 +1692,16 @@
       const back = document.querySelector('.back-link');
       if (back) { back.textContent = '← 見本にもどる'; back.href = 'demo.html'; }
     }
-    const raw = new URLSearchParams(location.search).get('id');
+    const params = new URLSearchParams(location.search);
+
+    // スタンプ帳のコンプリートバナーから来た場合は、いきなり記念画面を出す
+    if (params.get('all') === '1') {
+      document.getElementById('phase-scan').classList.add('hidden');
+      showAllComplete();
+      return;
+    }
+
+    const raw = params.get('id');
     if (!raw) return;
     const id = Number(raw);
     if (!Number.isInteger(id) || id < 1 || id > 5) return;

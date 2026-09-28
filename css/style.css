@@ -53,7 +53,9 @@ a {
 .page-container {
   max-width: 480px;
   margin: 0 auto;
-  padding: 0 16px 80px;
+  /* ボトムナビ(約60px)＋iPhoneのホームバー分を確保。
+     これが足りないと最後のスタンプがナビの下に隠れる */
+  padding: 0 16px calc(104px + env(safe-area-inset-bottom));
 }
 
 /* ---------- ヘッダー ---------- */
