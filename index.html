@@ -81,7 +81,7 @@
     <section class="marker-guide mt-16">
       <p>各スポットにあるQRコードをスキャンしてスタンプをゲット！</p>
       <p style="font-size:0.8rem;margin-top:8px;color:var(--text-sub);">
-        5つ全部集めてコンプリートを目指そう！
+        <span id="guide-total">6つ</span>全部集めてコンプリートを目指そう！
       </p>
     </section>
 
@@ -104,6 +104,8 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       renderStampGrid();
+      const gt = document.getElementById('guide-total');
+      if (gt) gt.textContent = TOTAL_STAMPS + 'つ';
       if (isDemoMode()) {
         document.getElementById('demo-bar').classList.remove('hidden');
         document.querySelectorAll('.bottom-nav a').forEach(a => {

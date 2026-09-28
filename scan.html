@@ -674,7 +674,7 @@
     <div class="all-stage" id="all-stage"></div>
     <p class="all-title">ALL YOKAI COMPLETE</p>
     <p class="all-main">百鬼夜行<br>コンプリート！</p>
-    <p class="all-sub">五体の妖怪がすべて揃いました<br>本部テントで景品とお引き換えください</p>
+    <p class="all-sub"><span id="all-count">全て</span>の妖怪がすべて揃いました<br>本部テントで景品とお引き換えください</p>
     <div class="all-actions">
       <a class="all-primary" href="index.html" id="all-to-book">&#127381; スタンプ帳を見る</a>
       <button class="all-secondary" id="all-replay">&#10022; もう一度見る</button>
@@ -737,7 +737,7 @@
       if (m) stampId = m[1];
     }
     const id = Number(stampId);
-    if (id >= 1 && id <= 5) {
+    if (id >= 1 && id <= STAMPS_CONFIG.length) {
       active = false;
       scanner.stop().catch(() => {});
       showImagePhase(id);
@@ -1501,33 +1501,38 @@
 
   /* ────────────────────────────────────────
      全妖怪コンプリート（レア演出）
-     5体を扇状に並べ、順番に立ち上がらせる
+     全員を横一列に並べ、順番に立ち上がらせる
   ──────────────────────────────────────── */
   let allFxRAF = null;
 
   function showAllComplete() {
     const stage = document.getElementById('all-stage');
     // 中央を大きく、外側ほど小さく奥に置く
-    // 合計 96% + すき間。中央をいちばん大きく、外へ行くほど小さく見せる
-    const layout = [
-      { w: 17, lift: 10, d: 0.55 },
-      { w: 20, lift: 5,  d: 0.40 },
-      { w: 23, lift: 0,  d: 0.15 },   // 中央
-      { w: 20, lift: 5,  d: 0.28 },
-      { w: 17, lift: 10, d: 0.67 },
-    ];
-    stage.innerHTML = STAMPS_CONFIG.slice(0, 5).map((st, i) => {
-      const L = layout[i];
+    // 何体でも収まるよう、幅とタイミングを頭数から計算する
+    const N = STAMPS_CONFIG.length;
+    const GAP = 1;                              // すき間(%)
+    const base = (100 - GAP * (N - 1)) / N;     // 均等割りした幅
+    const mid  = (N - 1) / 2;                   // 中央の位置
+
+    stage.innerHTML = STAMPS_CONFIG.map((st, i) => {
+      const dist = Math.abs(i - mid) / (mid || 1);   // 中央からの遠さ 0〜1
+      const w    = base * (1.14 - dist * 0.22);      // 中央ほど大きく
+      const lift = Math.round(dist * 11);            // 外側ほど少し下げる
+      const d    = 0.15 + dist * 0.4 + (i > mid ? 0.06 : 0);  // 中央から外へ順に
       return `
         <div class="all-char" style="
-             width:${L.w}%; margin-bottom:${L.lift}px;
-             animation-delay:${L.d}s;"
+             width:${w.toFixed(1)}%; margin-bottom:${lift}px;
+             animation-delay:${d.toFixed(2)}s;"
              title="${st.name}">
           <img src="${st.image}" alt="${st.name}"
                onerror="this.outerHTML='<span class=\'fb\'>${st.emoji}</span>'">
           <span class="nm">${st.name}</span>
         </div>`;
     }).join('');
+
+    const cnt = document.getElementById('all-count');
+    if (cnt) cnt.textContent = ['', '一', '二', '三', '四', '五', '六', '七', '八'][N] ? 
+      ['', '一', '二', '三', '四', '五', '六', '七', '八'][N] + '体' : N + '体';
 
     if (isDemoMode()) {
       document.getElementById('all-to-book').href = 'index.html?demo=1';
@@ -1653,7 +1658,7 @@
     document.getElementById('complete-name').textContent = curStamp.name;
     document.getElementById('complete-sub').textContent  = curStamp.subtitle;
     document.querySelector('.btn-to-list').style.background = curStamp.color;
-    // 5体そろったらレア画面へ
+    // 全員そろったらレア画面へ
     if (isComplete()) { showAllComplete(); return; }
 
     document.getElementById('phase-image').classList.add('hidden');
@@ -1717,7 +1722,7 @@
     const raw = params.get('id');
     if (!raw) return;
     const id = Number(raw);
-    if (!Number.isInteger(id) || id < 1 || id > 5) return;
+    if (!Number.isInteger(id) || id < 1 || id > STAMPS_CONFIG.length) return;
     showImagePhase(id);
   });
 

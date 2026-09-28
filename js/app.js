@@ -5,7 +5,9 @@
  */
 
 const STORAGE_KEY = 'stamp-rally-stamps';
-const TOTAL_STAMPS = 5;
+// 妖怪の数は stamps-config.js から自動で決まる。
+// ここを直書きにすると、妖怪を増減したときに直し漏れが出る
+const TOTAL_STAMPS = (typeof STAMPS_CONFIG !== 'undefined') ? STAMPS_CONFIG.length : 5;
 
 /**
  * デモモード（?demo=1）
