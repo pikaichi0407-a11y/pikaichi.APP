@@ -1,5 +1,5 @@
 /* =============================================
-   十千木 百鬼夜行スタンプラリー - グローバルスタイル
+   とちぎ蚤の市　妖怪スタンプラリー - グローバルスタイル
    モバイルファースト設計（スマホ縦持ち基準）
    ============================================= */
 
@@ -72,9 +72,11 @@ a {
 }
 
 .app-header h1 {
-  font-size: 1.25rem;
+  /* 端末の幅に合わせて縮める。名前が長いと1文字だけ折り返して不格好になるため */
+  font-size: clamp(0.95rem, 4.4vw, 1.25rem);
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   background: linear-gradient(90deg, #F5D78E, #FBBF24, #F5D78E);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

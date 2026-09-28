@@ -53,7 +53,7 @@ const STAMPS_CONFIG = [
     id: 3,
     name: '青鬼',
     subtitle: '青鬼をゲット！',
-    description: '十千木でいちばん大きな妖怪。見た目は怖いが、根はやさしい。',
+    description: 'この町でいちばん大きな妖怪。見た目は怖いが、根はやさしい。',
     image: './assets/aooni.webp',
     color: '#C0442A',
     emoji: '👹',
