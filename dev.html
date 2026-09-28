@@ -6,7 +6,6 @@
   <meta name="theme-color" content="#1a1a2e" />
   <title>開発者パネル - スタンプラリー</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     body { background: #0f0f1a; }
     .dev-header {
@@ -152,27 +151,21 @@
     }
 
     function renderQRList() {
-      const container = document.getElementById('qr-list');
-      STAMPS_CONFIG.forEach((stamp) => {
-        const url = BASE_URL + stamp.id;
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'margin-bottom:20px;';
-        wrap.innerHTML = `
-          <p style="text-align:center;font-size:0.82rem;font-weight:700;color:#a0aec0;margin-bottom:8px;">
-            ${stamp.emoji} ${stamp.name}
+      const c = document.getElementById('qr-list');
+      c.innerHTML = STAMPS_CONFIG.map((s) => `
+        <div style="margin-bottom:18px;">
+          <p style="text-align:center;font-size:0.82rem;font-weight:700;color:#a0aec0;margin-bottom:6px;">
+            SPOT ${s.id}：${s.name}（${s.spot}）
           </p>
-          <div id="qr-${stamp.id}" style="display:flex;justify-content:center;background:white;padding:12px;border-radius:12px;"></div>
-          <p style="text-align:center;font-size:0.58rem;color:#4a5568;word-break:break-all;margin-top:6px;">${url}</p>
-        `;
-        container.appendChild(wrap);
-        new QRCode(document.getElementById(`qr-${stamp.id}`), {
-          text: url,
-          width: 180, height: 180,
-          colorDark: stamp.color,
-          colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M,
-        });
-      });
+          <div style="background:white;padding:10px;border-radius:12px;">
+            <img src="qr/spot${s.id}.png" alt="スポット${s.id}"
+                 style="width:100%;max-width:190px;display:block;margin:0 auto;">
+          </div>
+          <p style="text-align:center;font-size:0.58rem;color:#4a5568;word-break:break-all;margin-top:5px;">
+            ${BASE_URL}${s.id}
+          </p>
+        </div>
+      `).join('');
     }
 
     function showToast(msg) {

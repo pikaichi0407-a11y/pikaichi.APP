@@ -3,177 +3,160 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>スタンプQRコード一覧（印刷用）</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <title>QRコード印刷 - 十千木 百鬼夜行スタンプラリー</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-      color: #212121;
+      background: #eceaf3;
+      color: #1d1b2b;
+      padding: 20px 14px 60px;
     }
 
-    .page-title {
-      text-align: center;
-      font-size: 1.4rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-      color: #3949AB;
+    /* ---------- 画面表示のときだけ出る案内 ---------- */
+    .guide {
+      max-width: 620px; margin: 0 auto 22px;
+      background: white; border-radius: 14px;
+      padding: 20px 22px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.09);
     }
-    .page-sub {
-      text-align: center;
-      font-size: 0.85rem;
-      color: #757575;
-      margin-bottom: 24px;
+    .guide h1 { font-size: 1.15rem; margin-bottom: 4px; }
+    .guide .sub { font-size: 0.85rem; color: #6b6880; margin-bottom: 16px; }
+    .guide ol { margin: 0 0 4px 1.15em; }
+    .guide li { font-size: 0.9rem; line-height: 1.95; }
+    .guide .warn {
+      margin-top: 14px; padding: 11px 13px;
+      background: #FFF4E0; border-left: 4px solid #E8912B;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem; line-height: 1.75;
     }
-
     .btn-print {
-      display: block;
-      margin: 0 auto 24px;
-      background: #5C6BC0;
-      color: white;
-      border: none;
-      border-radius: 999px;
-      padding: 12px 32px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
+      display: block; width: 100%;
+      margin-top: 16px; padding: 14px;
+      background: #5C3FC0; color: white;
+      border: none; border-radius: 999px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      font-family: inherit;
     }
+    .btn-print:active { background: #47309a; }
     .btn-back {
-      display: block;
-      margin: 0 auto 32px;
-      text-align: center;
-      color: #5C6BC0;
-      font-size: 0.9rem;
+      display: block; text-align: center; margin-top: 10px;
+      color: #5C3FC0; font-size: 0.88rem; text-decoration: none;
     }
 
-    /* QRカードグリッド */
-    .qr-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .qr-card {
+    /* ---------- 掲示物 1枚ぶん ---------- */
+    .sheet {
+      max-width: 620px;
+      margin: 0 auto 20px;
       background: white;
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 14px;
+      padding: 30px 26px 24px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.09);
       text-align: center;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-      border-top: 6px solid var(--card-color, #5C6BC0);
-      break-inside: avoid;
+      page-break-after: always;
+      break-after: page;
     }
+    .sheet:last-child { page-break-after: auto; break-after: auto; }
 
-    .qr-card-emoji { font-size: 2.2rem; margin-bottom: 6px; }
-    .qr-card-name  { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
-    .qr-card-sub   { font-size: 0.78rem; color: #757575; margin-bottom: 14px; }
-
-    .qr-wrap {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .qr-wrap canvas,
-    .qr-wrap img { border-radius: 8px; }
-
-    .qr-url {
-      font-size: 0.62rem;
-      color: #9E9E9E;
-      word-break: break-all;
-      margin-top: 4px;
-    }
-
-    .spot-label {
+    .sheet-no {
       display: inline-block;
-      margin-top: 8px;
-      padding: 3px 12px;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      background: var(--card-color, #5C6BC0);
-      color: white;
-      opacity: 0.85;
+      background: #2b1d52; color: #FFD75E;
+      font-size: 0.82rem; font-weight: 800;
+      letter-spacing: 0.22em;
+      padding: 5px 20px; border-radius: 999px;
+    }
+    .sheet-spot {
+      font-size: 1.5rem; font-weight: 800;
+      margin-top: 12px; line-height: 1.35;
+    }
+    .sheet-lead {
+      font-size: 1.02rem; font-weight: 700;
+      color: #3d3a52; margin-top: 16px;
+    }
+    .sheet-qr {
+      width: 100%; max-width: 330px;
+      margin: 14px auto 10px;
+      border: 3px solid #1d1b2b; border-radius: 10px;
+      display: block;
+    }
+    .sheet-note {
+      font-size: 0.92rem; color: #4a4760; line-height: 1.85;
+    }
+    .sheet-tag {
+      display: inline-block; margin-top: 12px;
+      background: #f0edf8; color: #3d2f77;
+      border-radius: 999px; padding: 6px 18px;
+      font-size: 0.86rem; font-weight: 700;
+    }
+    .sheet-foot {
+      margin-top: 18px; padding-top: 12px;
+      border-top: 1px solid #ddd9ea;
+      font-size: 0.76rem; color: #7d7a91; line-height: 1.7;
+    }
+    .staff {
+      margin-top: 10px; font-size: 0.7rem; color: #a5a2b5;
     }
 
-    /* 印刷時 */
+    /* ---------- 印刷時 ---------- */
     @media print {
-      body { background: white; padding: 10px; }
-      .btn-print, .btn-back, .page-sub { display: none; }
-      .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-      .qr-card { box-shadow: none; border: 1px solid #ddd; }
+      body { background: white; padding: 0; }
+      .guide { display: none; }
+      .sheet {
+        max-width: none; margin: 0;
+        box-shadow: none; border-radius: 0;
+        padding: 26mm 18mm;
+        min-height: 100vh;
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .sheet-qr { max-width: 92mm; }
+      .staff { display: none; }
     }
+    @page { size: A4 portrait; margin: 0; }
   </style>
 </head>
 <body>
 
-<h1 class="page-title">🗺️ スタンプラリー QRコード一覧</h1>
-<p class="page-sub">各スポットに設置してください。スマホのカメラで読み取るとスタンプがGETできます！</p>
+  <div class="guide">
+    <h1>&#128438; QRコード印刷</h1>
+    <p class="sub">各スポットに掲示するQRコードです（A4たて・1スポット1枚）</p>
+    <ol>
+      <li>下の「印刷する」を押す</li>
+      <li>A4・カラー・余白なしで印刷</li>
+      <li><strong>ラミネート加工</strong>してから設置</li>
+    </ol>
+    <div class="warn">
+      <strong>屋外に貼るのでラミネート必須です。</strong><br>
+      雨で濡れると読み取れなくなり、風で飛びます。<br>
+      紙の左下に小さくスポット番号が入っているので、貼る場所を間違えません。
+    </div>
+    <button class="btn-print" onclick="window.print()">&#128424; 印刷する</button>
+    <a class="btn-back" href="dev.html">&#8592; 開発者パネルに戻る</a>
+  </div>
 
-<button class="btn-print" onclick="window.print()">🖨️ 印刷する</button>
-<a href="index.html" class="btn-back">← スタンプ帳に戻る</a>
+  <div id="sheets"></div>
 
-<div class="qr-grid" id="qr-grid"></div>
-
-<script src="js/stamps-config.js"></script>
-<script>
-  const BASE_URL = 'https://pikaichi0407-a11y.github.io/pikaichi.APP/scan.html?id=';
-
-  const COLORS = {
-    1: '#1565C0',
-    2: '#283593',
-    3: '#0D47A1',
-    4: '#B71C1C',
-    5: '#E65100',
-  };
-
-  const grid = document.getElementById('qr-grid');
-
-  // ライブラリが読み込めなかった場合は、途中で止まらず理由を出す
-  if (typeof QRCode === 'undefined') {
-    grid.innerHTML = `
-      <div style="grid-column:1/-1;padding:24px;text-align:center;
-                  border:2px solid #C62828;border-radius:12px;color:#C62828;">
-        <p style="font-weight:700;margin-bottom:8px;">QRコードを生成できませんでした</p>
-        <p style="font-size:0.85rem;">
-          ネットワークに接続してページを再読み込みしてください。<br>
-          （QR生成ライブラリの読み込みに失敗しています）
+  <script src="js/stamps-config.js"></script>
+  <script>
+    // QRコードは画像として同梱してあるので、ネットが不安定でも必ず印刷できる
+    document.getElementById('sheets').innerHTML = STAMPS_CONFIG.map((s) => `
+      <div class="sheet">
+        <span class="sheet-no">SPOT ${s.id}</span>
+        <p class="sheet-spot">${s.spot}</p>
+        <p class="sheet-lead">スマホのカメラをかざしてください</p>
+        <img class="sheet-qr" src="qr/spot${s.id}.png" alt="スポット${s.id}のQRコード">
+        <p class="sheet-note">
+          読み取ると妖怪があらわれます<br>
+          アプリのインストールは不要です
         </p>
-      </div>`;
-  } else {
-  STAMPS_CONFIG.forEach((stamp) => {
-    const url = BASE_URL + stamp.id;
-    const color = COLORS[stamp.id] || '#5C6BC0';
-
-    // カード要素
-    const card = document.createElement('div');
-    card.className = 'qr-card';
-    card.style.setProperty('--card-color', color);
-    card.innerHTML = `
-      <div class="qr-card-emoji">${stamp.emoji}</div>
-      <div class="qr-card-name">スタンプ ${stamp.id}：${stamp.name}</div>
-      <div class="qr-card-sub">${stamp.subtitle}</div>
-      <div class="qr-wrap" id="qr-${stamp.id}"></div>
-      <div class="qr-url">${url}</div>
-      <div class="spot-label">スポット ${stamp.id}：${stamp.spot || '未設定'}</div>
-    `;
-    grid.appendChild(card);
-
-    // QR生成
-    new QRCode(document.getElementById(`qr-${stamp.id}`), {
-      text: url,
-      width: 180,
-      height: 180,
-      colorDark: color,
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M,
-    });
-  });
-  }
-</script>
+        <span class="sheet-tag">参加無料</span>
+        <div class="sheet-foot">
+          十千木 百鬼夜行スタンプラリー<br>
+          ${STAMPS_CONFIG.length}体すべて集めて本部テントへ
+        </div>
+        <p class="staff">［スタッフ用］${s.id}／${STAMPS_CONFIG.length}　${s.name}　${s.spot}</p>
+      </div>
+    `).join('');
+  </script>
 </body>
 </html>
