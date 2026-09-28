@@ -129,6 +129,11 @@
       <strong>屋外に貼るのでラミネート必須です。</strong><br>
       雨で濡れると読み取れなくなり、風で飛びます。<br>
       紙の左下に小さくスポット番号が入っているので、貼る場所を間違えません。
+      <br><br>
+      <strong>「携帯用」と書かれた2枚は貼りません。</strong><br>
+      スタッフが会場を歩きながら持ちます。産女は<strong>手に持ち</strong>、
+      河童は<strong>背負って</strong>ください。お客さんが見分けられるよう、
+      この2つは必ず分けてください。
     </div>
     <button class="btn-print" onclick="window.print()">&#128424; 印刷する</button>
     <a class="btn-back" href="dev.html">&#8592; 開発者パネルに戻る</a>
@@ -139,9 +144,12 @@
   <script src="js/stamps-config.js"></script>
   <script>
     // QRコードは画像として同梱してあるので、ネットが不安定でも必ず印刷できる
+    // 決まった場所がなく人が持ち歩くスポットは、掲示物ではなく「携帯用」として刷る
+    const isMobile = (s) => s.spot.includes('移動中');
+
     document.getElementById('sheets').innerHTML = STAMPS_CONFIG.map((s) => `
       <div class="sheet">
-        <span class="sheet-no">SPOT ${s.id}</span>
+        <span class="sheet-no">${isMobile(s) ? '携帯用 ' : ''}SPOT ${s.id}</span>
         <p class="sheet-spot">${s.spot}</p>
         <p class="sheet-lead">スマホのカメラをかざしてください</p>
         <img class="sheet-qr" src="qr/spot${s.id}.png" alt="スポット${s.id}のQRコード">
@@ -154,7 +162,10 @@
           十千木 百鬼夜行スタンプラリー<br>
           ${STAMPS_CONFIG.length}体すべて集めて本部テントへ
         </div>
-        <p class="staff">［スタッフ用］${s.id}／${STAMPS_CONFIG.length}　${s.name}　${s.spot}</p>
+        <p class="staff">
+          ［スタッフ用］${s.id}／${STAMPS_CONFIG.length}　${s.name}　${s.spot}
+          ${isMobile(s) ? '　※ 貼らずに持ち歩いてください' : ''}
+        </p>
       </div>
     `).join('');
   </script>
