@@ -106,6 +106,20 @@
   <script src="js/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // ?reset でスタンプを全消去。テストの記録が残ったときに
+      // URLを開くだけで直せるようにしてある
+      if (new URLSearchParams(location.search).has('reset')) {
+        const n = getCollectedStamps().length;
+        if (n === 0) {
+          alert('スタンプはもともと1つもありません。このまま遊べます。');
+        } else if (confirm(`スタンプ${n}個を消して、最初から遊べる状態にします。よろしいですか？`)) {
+          resetAllStamps();
+          alert('消しました。最初から遊べます。');
+        }
+        location.replace('index.html');
+        return;
+      }
+
       renderStampGrid();
       const gt = document.getElementById('guide-total');
       if (gt) gt.textContent = TOTAL_STAMPS + 'つ';
