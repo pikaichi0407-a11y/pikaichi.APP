@@ -34,6 +34,26 @@
       border-radius: 0 8px 8px 0;
       font-size: 0.85rem; line-height: 1.75;
     }
+    .pick {
+      display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+    }
+    .pick button {
+      flex: 1; min-width: 110px;
+      background: white; color: #3d2a7a;
+      border: 2px solid #d6cfe8; border-radius: 10px;
+      padding: 11px 8px; font-size: 0.86rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .pick button.on {
+      background: #5C3FC0; color: white; border-color: #5C3FC0;
+    }
+    .pick-note {
+      margin-top: 10px; font-size: 0.82rem; color: #6b6880;
+      text-align: center;
+    }
+    /* 選ばれていないものは画面でも印刷でも出さない */
+    .sheet.off { display: none !important; }
+
     .btn-print {
       display: block; width: 100%;
       margin-top: 16px; padding: 14px;
@@ -194,6 +214,12 @@
       河童は<strong>背負って</strong>ください。お客さんが見分けられるよう、
       この2つは必ず分けてください。
     </div>
+    <div class="pick">
+      <button id="pick-all"   class="on" onclick="pick('all')">すべて（7枚）</button>
+      <button id="pick-start"           onclick="pick('start')">スタート案内だけ</button>
+      <button id="pick-spot"            onclick="pick('spot')">スポットだけ（6枚）</button>
+    </div>
+    <p class="pick-note" id="pick-note">7枚印刷されます</p>
     <button class="btn-print" onclick="window.print()">&#128424; 印刷する</button>
     <a class="btn-back" href="dev.html">&#8592; 開発者パネルに戻る</a>
   </div>
@@ -252,6 +278,20 @@
         </p>
       </div>
     `).join('');
+
+    // 印刷するものを選ぶ
+    function pick(mode) {
+      const sheets = [...document.querySelectorAll('.sheet')];
+      sheets.forEach(el => {
+        const isStart = el.classList.contains('start');
+        const show = mode === 'all' || (mode === 'start' && isStart) || (mode === 'spot' && !isStart);
+        el.classList.toggle('off', !show);
+      });
+      ['all','start','spot'].forEach(m =>
+        document.getElementById('pick-' + m).classList.toggle('on', m === mode));
+      const n = sheets.filter(el => !el.classList.contains('off')).length;
+      document.getElementById('pick-note').textContent = n + '枚印刷されます';
+    }
   </script>
 </body>
 </html>
