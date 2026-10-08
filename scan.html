@@ -8,9 +8,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0d0d1a" />
   <title>QRスキャン - とちぎ蚤の市　妖怪スタンプラリー</title>
-  <!-- QR読取ライブラリ。アプリ内カメラでスキャンする時だけ必要なので defer で非同期に。
-       標準カメラから ?id= で来た場合はこれを待たずに画面が出る（電波が悪い会場対策） -->
-  <script defer src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- QR読取ライブラリ。外部CDNに置くと、会場の電波やCDN障害で
+       スキャナーが使えなくなるため同梱している。
+       defer にしてあるので、標準カメラから ?id= で来た場合は待たずに表示される -->
+  <script defer src="js/html5-qrcode.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
