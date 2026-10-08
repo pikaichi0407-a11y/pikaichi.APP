@@ -730,13 +730,15 @@
   function onScanSuccess(text) {
     if (!active) return;
     let stampId = null;
+    // 現在のQRは scan.html?id=N を指す。
+    // ar.html / stamp.html は以前のQRを刷ってしまった場合のための保険。
     try {
       const url = new URL(text);
-      if (url.pathname.includes('ar.html') || url.pathname.includes('stamp.html')) {
+      if (/\/(scan|ar|stamp)\.html$/.test(url.pathname) || url.pathname.endsWith('/')) {
         stampId = url.searchParams.get('id');
       }
     } catch {
-      const m = text.match(/(?:ar|stamp)\.html\?(?:.*&)?id=(\d+)/);
+      const m = text.match(/(?:scan|ar|stamp)\.html\?(?:.*&)?id=(\d+)/);
       if (m) stampId = m[1];
     }
     const id = Number(stampId);
