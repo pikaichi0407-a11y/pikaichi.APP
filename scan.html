@@ -735,12 +735,16 @@
     // ar.html / stamp.html は以前のQRを刷ってしまった場合のための保険。
     try {
       const url = new URL(text);
+      // 自分のサイトのQRだけ受け付ける。
+      // これが無いと、他人が作った偽QRでもスタンプが付いてしまう。
+      // 本番URLも明示しておき、将来ドメインを変えても古いQRが使えるようにする
+      const ALLOW = [location.origin, 'https://pikaichi0407-a11y.github.io'];
+      if (!ALLOW.includes(url.origin)) throw new Error('別サイトのQR');
       if (/\/(scan|ar|stamp)\.html$/.test(url.pathname) || url.pathname.endsWith('/')) {
         stampId = url.searchParams.get('id');
       }
     } catch {
-      const m = text.match(/(?:scan|ar|stamp)\.html\?(?:.*&)?id=(\d+)/);
-      if (m) stampId = m[1];
+      stampId = null;
     }
     const id = Number(stampId);
     if (id >= 1 && id <= STAMPS_CONFIG.length) {
