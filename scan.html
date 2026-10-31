@@ -792,9 +792,7 @@
       emojiEl.style.display = 'block';
     };
 
-    document.getElementById('img-stamp-no').textContent  = curStamp.spot
-      ? `STAMP #${curStamp.id}　${curStamp.spot}`
-      : `STAMP #${curStamp.id}`;
+    document.getElementById('img-stamp-no').textContent  = `STAMP #${curStamp.id}`;
     document.getElementById('img-char-name').textContent = curStamp.name;
     document.getElementById('img-char-sub').textContent  = curStamp.subtitle;
     document.getElementById('btn-stamp-get').style.background = curStamp.color;
